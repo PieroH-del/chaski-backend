@@ -1,379 +1,241 @@
-# Chaski Backend - API REST para Delivery de Comida
+# 🍕 Chaski Backend - API REST para Delivery de Comida
 
-Backend completo en Spring Boot para una aplicación móvil Android tipo delivery de comida.
+Backend completo en Spring Boot para una aplicación móvil Android tipo delivery de comida. Sistema de gestión de pedidos, restaurantes, productos y pagos.
 
-## 🚀 Características
+[![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.java.net/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.0-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0-blue.svg)](https://www.mysql.com/)
 
-- ✅ Sistema de autenticación con BCrypt (sin JWT)
-- ✅ Gestión completa de usuarios y perfiles
-- ✅ CRUD de direcciones de entrega
-- ✅ Catálogo de restaurantes con filtros múltiples
-- ✅ Gestión de productos con opciones personalizables
-- ✅ Sistema completo de pedidos con estados
-- ✅ Integración con Stripe para pagos
-- ✅ CORS configurado para Android
-- ✅ MapStruct para mapeo de DTOs
-- ✅ Validaciones con Bean Validation
-- ✅ Manejo global de excepciones
+## ✨ Características Principales
 
-## 🛠️ Tecnologías
+- ✅ **Autenticación Segura**: BCrypt para encriptación de contraseñas
+- ✅ **Gestión de Usuarios**: Registro, actualización y gestión de direcciones
+- ✅ **Catálogo de Restaurantes**: Búsqueda y filtros avanzados
+- ✅ **Productos Personalizables**: Sistema de opciones para productos
+- ✅ **Sistema de Pedidos**: Estados completos (Pendiente → Entregado)
+- ✅ **Procesamiento de Pagos**: Integración con Stripe
+- ✅ **Cálculos Automáticos**: Subtotal, impuestos (18%), envío
+- ✅ **Base de Datos**: MySQL en Railway (configurado)
+- ✅ **CORS**: Configurado para aplicaciones móviles
+- ✅ **MapStruct**: Mapeo eficiente de DTOs
 
-- **Java 21**
-- **Spring Boot 4.0.0**
-- **Spring Data JPA**
-- **MySQL**
-- **MapStruct 1.5.5**
-- **Lombok**
-- **BCrypt (Spring Security Crypto)**
-- **Stripe Java SDK**
-- **Maven**
+## 🛠️ Stack Tecnológico
 
-## 📋 Requisitos Previos
+- Java 21
+- Spring Boot 4.0.0
+- Spring Data JPA
+- MySQL 8.0 (Railway)
+- MapStruct 1.5.5
+- Lombok
+- BCrypt
+- Stripe SDK
+- Maven
 
-- JDK 21 o superior
-- MySQL 8.0 o superior
-- Maven 3.6 o superior
-- Cuenta de Stripe (para pagos)
+## 🚀 Inicio Rápido
 
-## ⚙️ Configuración
-
-### 1. Base de Datos
-
-Crear la base de datos MySQL:
-
-```sql
-CREATE DATABASE chaski_db;
-```
-
-### 2. Configuración de application.properties
-
-Editar `src/main/resources/application.properties`:
-
-```properties
-# Configurar credenciales de MySQL
-spring.datasource.username=tu_usuario
-spring.datasource.password=tu_contraseña
-
-# Configurar API Key de Stripe
-stripe.api.key=tu_stripe_secret_key
-```
-
-### 3. Compilar el Proyecto
+### 1. Clonar Repositorio
 
 ```bash
-mvn clean install
+git clone https://github.com/PieroH-del/chaski-backend.git
+cd chaski-backend
 ```
 
-### 4. Ejecutar la Aplicación
+### 2. Configurar Variables de Entorno
 
+La base de datos MySQL ya está configurada en Railway. Puedes usar:
+
+**Para conexión pública (recomendado para Azure):**
+```bash
+export MYSQLHOST=aboose.proxy.rlwy.net
+export MYSQLPORT=41095
+export MYSQLDATABASE=railway
+export MYSQLUSER=root
+export MYSQLPASSWORD=BBvrDiRMBKIQJFZgJsvKKepIUltHZTBH
+export STRIPE_API_KEY=sk_test_tu_clave
+```
+
+Ver [ENVIRONMENT_VARIABLES.md](ENVIRONMENT_VARIABLES.md) para más opciones.
+
+### 3. Compilar y Ejecutar
+
+```bash
+# Compilar
+mvn clean package -DskipTests
+
+# Ejecutar
+java -jar target/chaski-backend-0.0.1-SNAPSHOT.jar
+```
+
+O directamente:
 ```bash
 mvn spring-boot:run
 ```
 
-La API estará disponible en: `http://localhost:8080`
+**La API estará en:** `http://localhost:8080/api`
 
-## 📚 Endpoints Principales
+## ☁️ Despliegue en Azure
 
-### Autenticación y Usuarios
+### Configurar Variables en Azure App Service
 
-#### Registro de Usuario
-```http
-POST /api/usuarios/registro
-Content-Type: application/json
+En **Azure Portal → App Service → Configuration → Application settings**:
 
-{
-  "nombre": "Juan Pérez",
-  "email": "juan@example.com",
-  "password": "password123",
-  "telefono": "987654321"
-}
-```
+| Variable | Valor |
+|----------|-------|
+| `MYSQLHOST` | `aboose.proxy.rlwy.net` |
+| `MYSQLPORT` | `41095` |
+| `MYSQLDATABASE` | `railway` |
+| `MYSQLUSER` | `root` |
+| `MYSQLPASSWORD` | `BBvrDiRMBKIQJFZgJsvKKepIUltHZTBH` |
+| `STRIPE_API_KEY` | Tu clave de Stripe |
 
-#### Login
-```http
-POST /api/usuarios/login
-Content-Type: application/json
+### Desplegar desde GitHub
 
-{
-  "email": "juan@example.com",
-  "password": "password123"
-}
-```
+1. En Azure Portal → **Deployment Center**
+2. Seleccionar **GitHub** como fuente
+3. Elegir repositorio: `PieroH-del/chaski-backend`
+4. Rama: `main`
+5. Azure creará automáticamente el workflow
 
-#### Actualizar Perfil
-```http
-PUT /api/usuarios/{id}
-Content-Type: application/json
+## 📌 Endpoints Principales
 
-{
-  "nombre": "Juan Carlos Pérez",
-  "telefono": "987654321",
-  "imagenPerfilUrl": "https://example.com/foto.jpg"
-}
-```
+**Base URL:** `http://localhost:8080/api` (desarrollo)
 
-### Direcciones
-
-#### Crear Dirección
-```http
-POST /api/direcciones
-Content-Type: application/json
-
-{
-  "usuarioId": 1,
-  "etiqueta": "Casa",
-  "direccionCompleta": "Av. Lima 123, Dept 401",
-  "referencia": "Edificio blanco",
-  "latitud": -12.046374,
-  "longitud": -77.042793,
-  "esPredeterminada": true
-}
-```
-
-#### Obtener Direcciones de Usuario
-```http
-GET /api/direcciones/usuario/{usuarioId}
-```
+### Usuarios
+- `POST /usuarios/registro` - Registrar usuario
+- `POST /usuarios/login` - Iniciar sesión
+- `GET /usuarios/{id}` - Obtener perfil
+- `PUT /usuarios/{id}` - Actualizar perfil
 
 ### Restaurantes
-
-#### Listar Todos
-```http
-GET /api/restaurantes
-```
-
-#### Buscar por Nombre
-```http
-GET /api/restaurantes/buscar?nombre=burger
-```
-
-#### Filtrar por Categoría
-```http
-GET /api/restaurantes/filtrar/categoria/{categoriaId}
-```
-
-#### Filtrar por Disponibilidad
-```http
-GET /api/restaurantes/filtrar/disponibilidad?estaAbierto=true
-```
-
-#### Filtrar por Calificación
-```http
-GET /api/restaurantes/filtrar/calificacion?calificacionMinima=4.0
-```
-
-#### Filtrar por Tiempo de Espera
-```http
-GET /api/restaurantes/filtrar/tiempo-espera?tiempoMaximo=30
-```
+- `GET /restaurantes` - Listar todos
+- `GET /restaurantes/{id}` - Detalle
+- `GET /restaurantes/buscar?nombre={nombre}` - Buscar
+- `GET /restaurantes/abiertos` - Solo abiertos
 
 ### Productos
-
-#### Listar Productos de Restaurante
-```http
-GET /api/productos/restaurante/{restauranteId}
-```
-
-#### Listar Solo Disponibles
-```http
-GET /api/productos/restaurante/{restauranteId}/disponibles
-```
-
-#### Detalle de Producto
-```http
-GET /api/productos/{id}
-```
+- `GET /productos/restaurante/{restauranteId}` - Por restaurante
+- `GET /productos/{id}` - Detalle
+- `GET /productos/disponibles/{restauranteId}` - Disponibles
 
 ### Pedidos
-
-#### Crear Pedido
-```http
-POST /api/pedidos
-Content-Type: application/json
-
-{
-  "usuarioId": 1,
-  "restauranteId": 1,
-  "direccionEntregaId": 1,
-  "notasInstrucciones": "Sin cebolla",
-  "detalles": [
-    {
-      "productoId": 1,
-      "cantidad": 2,
-      "opciones": [
-        {
-          "opcionId": 1
-        },
-        {
-          "opcionId": 5
-        }
-      ]
-    }
-  ]
-}
-```
-
-#### Historial de Pedidos de Usuario
-```http
-GET /api/pedidos/usuario/{usuarioId}
-```
-
-#### Detalle de Pedido
-```http
-GET /api/pedidos/{id}
-```
-
-#### Actualizar Estado de Pedido
-```http
-PUT /api/pedidos/{id}/estado?estado=EN_PREPARACION
-```
-
-#### Cancelar Pedido
-```http
-PUT /api/pedidos/{id}/cancelar
-```
+- `POST /pedidos` - Crear pedido
+- `GET /pedidos/usuario/{usuarioId}` - Por usuario
+- `PUT /pedidos/{id}/estado` - Actualizar estado
+- `PUT /pedidos/{id}/cancelar` - Cancelar
 
 ### Pagos
+- `POST /pagos` - Crear pago
+- `PUT /pagos/{id}/confirmar` - Confirmar pago
+- `GET /pagos/pedido/{pedidoId}` - Por pedido
 
-#### Crear Pago
-```http
-POST /api/pagos
-Content-Type: application/json
+Ver [API_DOCUMENTATION.md](API_DOCUMENTATION.md) para documentación completa.
 
-{
-  "pedidoId": 1,
-  "monto": 45.50,
-  "metodo": "TARJETA_CREDITO"
-}
-```
-
-#### Confirmar Pago
-```http
-POST /api/pagos/{id}/confirmar
-```
-
-#### Obtener Client Secret (para Stripe)
-```http
-GET /api/pagos/{id}/client-secret
-```
-
-#### Webhook de Stripe
-```http
-POST /api/pagos/webhook/stripe
-```
-
-## 🔄 Estados del Pedido
-
-Los pedidos siguen este flujo de estados:
-
-1. **PENDIENTE_PAGO** - Pedido creado, esperando pago
-2. **CONFIRMADO_TIENDA** - Pago confirmado, tienda notificada
-3. **EN_PREPARACION** - Restaurante preparando el pedido
-4. **LISTO_PARA_RECOGER** - Pedido listo para ser recogido por delivery
-5. **EN_CAMINO** - Delivery en camino al cliente
-6. **ENTREGADO** - Pedido entregado exitosamente
-7. **CANCELADO** - Pedido cancelado (posible en cualquier momento antes de EN_CAMINO)
-
-## 💳 Métodos de Pago
-
-- `TARJETA_CREDITO`
-- `TARJETA_DEBITO`
-- `YAPE`
-- `EFECTIVO`
-
-## 🔐 Autenticación Simple
-
-Este backend utiliza autenticación simple basada en validación de credenciales:
-
-1. El usuario se registra con email y contraseña
-2. La contraseña se hashea con BCrypt
-3. En el login, se validan las credenciales y se devuelven los datos del usuario
-4. Para endpoints protegidos, se puede validar email/password en cada request usando:
-
-```http
-POST /api/usuarios/validar-credenciales
-Content-Type: application/json
-
-{
-  "email": "usuario@example.com",
-  "password": "password123"
-}
-```
-
-## 📊 Base de Datos
-
-El esquema incluye las siguientes tablas:
-
-- `usuarios` - Información de usuarios
-- `direcciones` - Direcciones de entrega
-- `restaurantes` - Datos de restaurantes
-- `categorias` - Categorías de restaurantes
-- `restaurante_categorias` - Relación muchos a muchos
-- `productos` - Menú de productos
-- `grupos_opciones` - Grupos de personalización
-- `opciones` - Opciones individuales de personalización
-- `pedidos` - Pedidos realizados
-- `detalles_pedido` - Ítems del pedido
-- `opciones_detalle_pedido` - Opciones seleccionadas por ítem
-- `pagos` - Información de pagos
-
-## 🧪 Datos de Prueba
-
-El archivo `data.sql` incluye datos de ejemplo:
-
-- Usuario: `juan@example.com` / `password123`
-- 4 Restaurantes con productos
-- 6 Categorías
-- Productos con opciones personalizables
-
-## 🌐 CORS
-
-El backend tiene CORS configurado para permitir peticiones desde cualquier origen (`*`), ideal para desarrollo. Para producción, se recomienda especificar los orígenes permitidos.
-
-## 📦 Estructura del Proyecto
+## 📁 Estructura del Proyecto
 
 ```
-src/main/java/com/example/chaski_backend/
-├── config/          # Configuraciones (CORS)
-├── controller/      # Controladores REST
-├── dto/            # Data Transfer Objects
-├── enums/          # Enumeraciones
-├── exception/      # Manejo de excepciones
-├── mapper/         # Mappers de MapStruct
-├── model/          # Entidades JPA
-├── repository/     # Repositorios de datos
-└── service/        # Lógica de negocio
+chaski-backend/
+├── src/main/java/com/example/chaski_backend/
+│   ├── config/          # Configuración (CORS)
+│   ├── controller/      # REST Controllers
+│   ├── dto/             # Data Transfer Objects
+│   ├── enums/           # Estados y tipos
+│   ├── exception/       # Manejo de errores
+│   ├── mapper/          # MapStruct mappers
+│   ├── model/           # Entidades JPA
+│   ├── repository/      # Spring Data repositories
+│   └── service/         # Lógica de negocio
+├── src/main/resources/
+│   ├── application.properties
+│   └── data.sql         # Datos iniciales
+├── src/test/
+│   └── resources/
+│       └── application.properties  # Config para tests (H2)
+└── pom.xml
 ```
 
-## 🔨 Compilación para Producción
+## 🧪 Testing
+
+Los tests usan H2 en memoria (no requieren MySQL):
 
 ```bash
+# Ejecutar todos los tests
+mvn test
+
+# Ejecutar y generar reporte
+mvn clean test
+
+# Compilar sin tests
 mvn clean package -DskipTests
-java -jar target/chaski-backend-0.0.1-SNAPSHOT.jar
 ```
 
-## 📝 Notas Importantes
+## 🗄️ Base de Datos
 
-1. **Stripe**: Asegúrate de usar tu clave de API real de Stripe en producción
-2. **Seguridad**: Para producción, considera implementar JWT o Spring Security completo
-3. **Base de Datos**: Cambia `spring.jpa.hibernate.ddl-auto` a `validate` en producción
-4. **CORS**: Restringe los orígenes permitidos en producción
+### Configuración Actual: Railway MySQL
+
+✅ Ya configurado y funcionando
+- Host público: `aboose.proxy.rlwy.net:41095`
+- Host interno: `mysql.railway.internal:3306`
+- Database: `railway`
+- Usuario: `root`
+
+### Modelo de Datos
+
+Entidades principales:
+- Usuario → Direccion (1:N)
+- Usuario → Pedido (1:N)
+- Restaurante → Producto (1:N)
+- Producto → GrupoOpciones → Opcion
+- Pedido → DetallePedido → OpcionDetallePedido
+- Pedido → Pago (1:1)
+
+## 📚 Documentación
+
+- **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** - Endpoints detallados
+- **[ENVIRONMENT_VARIABLES.md](ENVIRONMENT_VARIABLES.md)** - Variables de entorno
+- **[HELP.md](HELP.md)** - Guía de Spring Boot
+
+## 🔧 Solución de Problemas
+
+### Error de conexión a MySQL
+- Verificar que las variables de entorno estén configuradas
+- Usar la URL pública si estás fuera de Railway
+- Verificar firewall/reglas de red
+
+### Tests fallando
+- Los tests usan H2, no requieren MySQL
+- Verificar que H2 esté en el `pom.xml`
+- Ejecutar con `-DskipTests` si es necesario
+
+### Build en GitHub Actions falla
+- El workflow está configurado para ignorar fallos de tests
+- Verifica las variables de entorno en GitHub Secrets
 
 ## 🤝 Contribución
 
-Este es un proyecto académico. Para mejoras:
-
-1. Fork del proyecto
-2. Crear rama feature (`git checkout -b feature/AmazingFeature`)
-3. Commit cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abrir Pull Request
+1. Fork el proyecto
+2. Crea tu rama (`git checkout -b feature/NuevaCaracteristica`)
+3. Commit cambios (`git commit -m 'Add: Nueva característica'`)
+4. Push (`git push origin feature/NuevaCaracteristica`)
+5. Abre un Pull Request
 
 ## 📄 Licencia
 
-Proyecto académico - uso educativo
+MIT License - ver [LICENSE](LICENSE)
 
-## 👨‍💻 Autor
+## 👥 Autor
 
-Desarrollado como proyecto de Chaski Backend API
+**PieroH-del** - [GitHub](https://github.com/PieroH-del)
+
+## 🙏 Agradecimientos
+
+- Spring Boot Team
+- MapStruct
+- Stripe
+- Railway (Hosting MySQL)
+
+---
+
+⭐ **Si te fue útil, dale una estrella en GitHub!**
+
+📧 Soporte: [GitHub Issues](https://github.com/PieroH-del/chaski-backend/issues)
 
