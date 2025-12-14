@@ -1,14 +1,15 @@
-# Railway Configuration File
-# Este archivo le dice a Railway cómo construir la aplicación
+# Railway Configuration File (TOML format)
+# https://docs.railway.com/reference/config-as-code
 
 [build]
 builder = "NIXPACKS"
-
-[build.env]
-MAVEN_OPTS = "-Dmaven.test.skip=true"
+nixpacksConfigPath = "nixpacks.toml"
 
 [deploy]
+numReplicas = 1
 startCommand = "java -Dserver.port=$PORT -jar target/chaski-backend-0.0.1-SNAPSHOT.jar"
 healthcheckPath = "/"
 healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
 

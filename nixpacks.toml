@@ -1,12 +1,14 @@
 # Nixpacks Configuration for Railway
-# Configura cómo Railway construye la aplicación Java
+# Configura cómo Railway construye la aplicación Java con Maven
 
 [phases.setup]
-nixPkgs = ["maven", "jdk21"]
+nixPkgs = ["...", "jdk21"]
 
 [phases.build]
-cmds = ["mvn clean package -DskipTests -Dmaven.test.skip=true"]
+cmds = [
+  "mvn clean package -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -B -V"
+]
 
 [start]
-cmd = "java -Dserver.port=$PORT $JAVA_OPTS -jar target/chaski-backend-0.0.1-SNAPSHOT.jar"
+cmd = "java -Dserver.port=$PORT -Xmx512m -jar target/chaski-backend-0.0.1-SNAPSHOT.jar"
 
