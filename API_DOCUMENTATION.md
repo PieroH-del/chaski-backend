@@ -416,13 +416,13 @@ Total = Subtotal + Costo Envío + Impuestos
 | Tecnología | Versión | Propósito |
 |------------|---------|-----------|
 | Java | 21 | Lenguaje principal |
-| Spring Boot | 4.0.0 | Framework |
-| Spring Data JPA | 4.0.0 | Persistencia |
+| Spring Boot | 3.4.1 | Framework |
+| Spring Data JPA | 3.4.1 | Persistencia |
 | MySQL | 8.0+ | Base de datos |
 | MapStruct | 1.5.5 | Mapeo de objetos |
 | Lombok | Latest | Reducción de boilerplate |
 | BCrypt | Latest | Hashing de contraseñas |
-| Stripe Java SDK | 26.5.0 | Procesamiento de pagos |
+| Stripe Java SDK | 24.8.0 | Procesamiento de pagos |
 | Maven | 3.6+ | Gestión de dependencias |
 
 ## Buenas Prácticas Implementadas
