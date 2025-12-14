@@ -1,0 +1,12 @@
+# Azure Web App deployment configuration
+# Este archivo configura cómo Azure construye y despliega la aplicación
+
+# Versión de Java
+JAVA_VERSION=21
+
+# Comando de build de Maven (saltando tests)
+mvn clean package -DskipTests
+
+# Puerto en el que la aplicación escucha
+PORT=8080
+
