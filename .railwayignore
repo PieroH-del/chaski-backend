@@ -1,0 +1,30 @@
+# Railway Ignore File
+# Archivos que Railway no debe incluir en el build
+
+# Tests
+src/test/
+
+# Documentación
+*.md
+!README.md
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Build local
+target/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Scripts locales
+*.cmd
+*.sh
+
+# Archivos de configuración local
+application-example.properties
+
