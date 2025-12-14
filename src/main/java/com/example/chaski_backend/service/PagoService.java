@@ -64,7 +64,7 @@ public class PagoService {
         }
 
         Pago pagoGuardado = pagoRepository.save(pago);
-        return pagoMapper.toDTO(pagoGuardado);
+        return pagoMapper.toDto(pagoGuardado);
     }
 
     @Transactional
@@ -85,7 +85,7 @@ public class PagoService {
         pedidoRepository.save(pedido);
 
         Pago pagoActualizado = pagoRepository.save(pago);
-        return pagoMapper.toDTO(pagoActualizado);
+        return pagoMapper.toDto(pagoActualizado);
     }
 
     @Transactional
@@ -96,25 +96,25 @@ public class PagoService {
         pago.setEstado(EstadoPago.FALLIDO);
 
         Pago pagoActualizado = pagoRepository.save(pago);
-        return pagoMapper.toDTO(pagoActualizado);
+        return pagoMapper.toDto(pagoActualizado);
     }
 
     @Transactional(readOnly = true)
     public PagoDTO obtenerPorPedido(Long pedidoId) {
         Pago pago = pagoRepository.findByPedidoId(pedidoId)
                 .orElseThrow(() -> new RuntimeException("Pago no encontrado para este pedido"));
-        return pagoMapper.toDTO(pago);
+        return pagoMapper.toDto(pago);
     }
 
     @Transactional(readOnly = true)
     public PagoDTO obtenerPorReferencia(String referenciaPasarela) {
         Pago pago = pagoRepository.findByReferenciaPasarela(referenciaPasarela)
                 .orElseThrow(() -> new RuntimeException("Pago no encontrado"));
-        return pagoMapper.toDTO(pago);
+        return pagoMapper.toDto(pago);
     }
 
     @Transactional
-    public void procesarWebhookStripe(Map<String, Object> payload) {
+    public PagoDTO procesarWebhookStripe(Map<String, Object> payload) {
         // Procesar webhook de Stripe
         String paymentIntentId = (String) payload.get("id");
         String status = (String) payload.get("status");
@@ -142,7 +142,8 @@ public class PagoService {
                 break;
         }
 
-        pagoRepository.save(pago);
+        Pago pagoGuardado = pagoRepository.save(pago);
+        return pagoMapper.toDto(pagoGuardado);
     }
 
     private String crearIntencionPagoStripe(Long monto) throws StripeException {

@@ -11,8 +11,6 @@ public interface PagoMapper {
     @Mapping(source = "pedido.id", target = "pedidoId")
     PagoDTO toDto(Pago entity);
 
-    @Mapping(source = "pedido.id", target = "pedidoId")
-    PagoDTO toDTO(Pago entity);
 
     @Mapping(source = "pedidoId", target = "pedido.id")
     Pago toEntity(PagoDTO dto);

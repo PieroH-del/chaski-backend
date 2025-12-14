@@ -13,10 +13,6 @@ public interface PedidoMapper {
     @Mapping(source = "direccionEntrega.id", target = "direccionEntregaId")
     PedidoDTO toDto(Pedido entity);
 
-    @Mapping(source = "usuario.id", target = "usuarioId")
-    @Mapping(source = "restaurante.id", target = "restauranteId")
-    @Mapping(source = "direccionEntrega.id", target = "direccionEntregaId")
-    PedidoDTO toDTO(Pedido entity);
 
     @Mapping(source = "usuarioId", target = "usuario.id")
     @Mapping(source = "restauranteId", target = "restaurante.id")

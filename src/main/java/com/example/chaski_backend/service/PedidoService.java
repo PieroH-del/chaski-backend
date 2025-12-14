@@ -107,13 +107,13 @@ public class PedidoService {
         pedido.setTotalFinal(subtotal.add(pedido.getCostoEnvio()).add(pedido.getImpuestos()));
 
         Pedido pedidoGuardado = pedidoRepository.save(pedido);
-        return pedidoMapper.toDTO(pedidoGuardado);
+        return pedidoMapper.toDto(pedidoGuardado);
     }
 
     @Transactional(readOnly = true)
     public List<PedidoDTO> obtenerPorUsuario(Long usuarioId) {
         return pedidoRepository.findByUsuarioIdOrderByFechaCreacionDesc(usuarioId).stream()
-                .map(pedidoMapper::toDTO)
+                .map(pedidoMapper::toDto)
                 .collect(Collectors.toList());
     }
 
@@ -121,7 +121,7 @@ public class PedidoService {
     public PedidoDTO obtenerPorId(Long id) {
         Pedido pedido = pedidoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Pedido no encontrado"));
-        return pedidoMapper.toDTO(pedido);
+        return pedidoMapper.toDto(pedido);
     }
 
     @Transactional
@@ -135,7 +135,7 @@ public class PedidoService {
         pedido.setEstado(nuevoEstado);
         Pedido pedidoActualizado = pedidoRepository.save(pedido);
 
-        return pedidoMapper.toDTO(pedidoActualizado);
+        return pedidoMapper.toDto(pedidoActualizado);
     }
 
     @Transactional
@@ -153,13 +153,13 @@ public class PedidoService {
         pedido.setEstado(EstadoPedido.CANCELADO);
         Pedido pedidoActualizado = pedidoRepository.save(pedido);
 
-        return pedidoMapper.toDTO(pedidoActualizado);
+        return pedidoMapper.toDto(pedidoActualizado);
     }
 
     @Transactional(readOnly = true)
     public List<PedidoDTO> obtenerPorEstado(EstadoPedido estado) {
         return pedidoRepository.findByEstado(estado).stream()
-                .map(pedidoMapper::toDTO)
+                .map(pedidoMapper::toDto)
                 .collect(Collectors.toList());
     }
 
