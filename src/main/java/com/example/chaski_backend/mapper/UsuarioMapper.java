@@ -8,9 +8,6 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface UsuarioMapper {
 
-    @Mapping(target = "passw", ignore = true)
-    @Mapping(target = "direcciones", ignore = true)
-    @Mapping(target = "pedidos", ignore = true)
     UsuarioDTO toDto(Usuario entity);
 
     @Mapping(target = "passw", ignore = true)

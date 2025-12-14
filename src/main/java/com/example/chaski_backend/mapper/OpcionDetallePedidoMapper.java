@@ -15,7 +15,6 @@ public interface OpcionDetallePedidoMapper {
 
     @Mapping(source = "detallePedidoId", target = "detallePedido.id")
     @Mapping(source = "opcionId", target = "opcion.id")
-    @Mapping(target = "opcionNombre", ignore = true)
     OpcionDetallePedido toEntity(OpcionDetallePedidoDTO dto);
 }
 
