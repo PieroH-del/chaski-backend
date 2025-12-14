@@ -1,10 +1,53 @@
-# API Documentation - Chaski Backend
+# 📖 API Documentation - Chaski Backend
 
-## Resumen del Proyecto
+## 🌐 Base URL
 
-Chaski Backend es una API REST completa para una aplicación de delivery de comida, desarrollada con Spring Boot, que incluye gestión de usuarios, restaurantes, productos, pedidos y pagos con integración de Stripe.
+- **Desarrollo Local**: `http://localhost:8080/api`
+- **Producción (Azure)**: `https://chaski-backend.azurewebsites.net/api`
 
-## Arquitectura del Sistema
+## 📝 Resumen del Proyecto
+
+Chaski Backend es una API REST completa para una aplicación de delivery de comida, desarrollada con Spring Boot 4.0.0 y Java 21. Incluye gestión de usuarios, restaurantes, productos, pedidos y pagos con integración de Stripe.
+
+### Características Principales
+
+- ✅ Autenticación con BCrypt
+- ✅ Sistema de pedidos con seguimiento de estados
+- ✅ Productos con opciones personalizables
+- ✅ Integración de pagos con Stripe
+- ✅ Cálculo automático de costos (subtotal, impuestos, envío)
+- ✅ Gestión de múltiples direcciones por usuario
+- ✅ Filtros avanzados para restaurantes
+- ✅ CORS configurado para aplicaciones móviles
+- ✅ Manejo global de excepciones
+- ✅ Desplegado en Azure App Service
+
+## 🔐 Autenticación
+
+Esta API utiliza autenticación basada en BCrypt para el hash de contraseñas. No implementa JWT, por lo que cada request debe incluir las credenciales o el ID del usuario autenticado.
+
+### Formato de Respuesta Estándar
+
+**Éxito:**
+```json
+{
+  "id": 1,
+  "nombre": "Juan Pérez",
+  "email": "juan@example.com",
+  ...
+}
+```
+
+**Error:**
+```json
+{
+  "timestamp": "2024-12-14T15:30:00",
+  "message": "Error descriptivo",
+  "details": "Detalles adicionales del error"
+}
+```
+
+## 🏗️ Arquitectura del Sistema
 
 ```
 ┌─────────────────┐
