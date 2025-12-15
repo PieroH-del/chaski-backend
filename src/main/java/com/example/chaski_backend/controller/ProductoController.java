@@ -16,6 +16,12 @@ public class ProductoController {
 
     private final ProductoService productoService;
 
+    @PostMapping
+    public ResponseEntity<ProductoDTO> crear(@RequestBody ProductoDTO productoDTO) {
+        ProductoDTO nuevoProducto = productoService.crear(productoDTO);
+        return ResponseEntity.status(201).body(nuevoProducto);
+    }
+
     @GetMapping("/restaurante/{restauranteId}")
     public ResponseEntity<List<ProductoDTO>> obtenerPorRestaurante(@PathVariable Long restauranteId) {
         List<ProductoDTO> productos = productoService.obtenerPorRestaurante(restauranteId);

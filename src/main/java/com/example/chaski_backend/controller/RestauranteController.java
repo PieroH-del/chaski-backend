@@ -17,6 +17,12 @@ public class RestauranteController {
 
     private final RestauranteService restauranteService;
 
+    @PostMapping
+    public ResponseEntity<RestauranteDTO> crear(@RequestBody RestauranteDTO restauranteDTO) {
+        RestauranteDTO nuevoRestaurante = restauranteService.crear(restauranteDTO);
+        return ResponseEntity.status(201).body(nuevoRestaurante);
+    }
+
     @GetMapping
     public ResponseEntity<List<RestauranteDTO>> obtenerTodos() {
         List<RestauranteDTO> restaurantes = restauranteService.listarTodos();

@@ -410,41 +410,651 @@ curl -X PUT http://localhost:8080/api/usuarios/1 \
 | PUT | `/api/direcciones/{id}` | Actualizar dirección |
 | DELETE | `/api/direcciones/{id}` | Eliminar dirección |
 
-### 3. Restaurantes
+### 3. 🍽️ Restaurantes
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/restaurantes` | Listar todos |
-| GET | `/api/restaurantes/{id}` | Obtener por ID |
-| GET | `/api/restaurantes/buscar?nombre={nombre}` | Buscar por nombre |
-| GET | `/api/restaurantes/filtrar/disponibilidad?estaAbierto={bool}` | Filtrar por apertura |
-| GET | `/api/restaurantes/filtrar/categoria/{categoriaId}` | Filtrar por categoría |
-| GET | `/api/restaurantes/filtrar/calificacion?calificacionMinima={decimal}` | Filtrar por rating |
-| GET | `/api/restaurantes/filtrar/tiempo-espera?tiempoMaximo={int}` | Filtrar por tiempo |
+#### Tabla de Endpoints
 
-### 4. Productos
+| Método | Endpoint | Descripción | Autenticación |
+|--------|----------|-------------|---------------|
+| POST | `/api/restaurantes` | Crear nuevo restaurante | Requerida |
+| GET | `/api/restaurantes` | Listar todos los restaurantes | No requerida |
+| GET | `/api/restaurantes/{id}` | Obtener restaurante por ID | No requerida |
+| GET | `/api/restaurantes/buscar?nombre={nombre}` | Buscar por nombre | No requerida |
+| GET | `/api/restaurantes/filtrar/disponibilidad?estaAbierto={bool}` | Filtrar por apertura | No requerida |
+| GET | `/api/restaurantes/filtrar/categoria/{categoriaId}` | Filtrar por categoría | No requerida |
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/productos/restaurante/{restauranteId}` | Productos de restaurante |
-| GET | `/api/productos/restaurante/{restauranteId}/disponibles` | Solo disponibles |
-| GET | `/api/productos/{id}` | Detalle con opciones |
+---
 
-**Ejemplo - Detalle de Producto:**
+#### 🏪 **POST** `/api/restaurantes` - Crear Restaurante
+
+Crea un nuevo restaurante en el sistema con toda su información básica.
+
+**Headers:**
+```
+Content-Type: application/json
+```
+
+**Body (JSON):**
 ```json
-GET /api/productos/1
+{
+  "nombre": "Burger King",                              // REQUERIDO - Nombre del restaurante
+  "descripcion": "Las mejores hamburguesas a la parrilla", // REQUERIDO - Descripción del restaurante
+  "imagenLogoUrl": "https://example.com/logo.jpg",     // REQUERIDO - URL del logo
+  "imagenPortadaUrl": "https://example.com/banner.jpg", // REQUERIDO - URL de la imagen de portada
+  "direccion": "Av. Javier Prado 123, San Isidro",     // REQUERIDO - Dirección física
+  "calificacionPromedio": 4.5,                          // OPCIONAL - Calificación inicial (0.0-5.0)
+  "estaAbierto": true,                                  // REQUERIDO - Estado de apertura
+  "tiempoEsperaMinutos": 30,                           // REQUERIDO - Tiempo estimado de preparación
+  "costoEnvioBase": 5.00,                              // REQUERIDO - Costo base de envío
+  "categorias": [                                       // OPCIONAL - Categorías del restaurante
+    {
+      "id": 1,
+      "nombre": "Hamburguesas"
+    },
+    {
+      "id": 3,
+      "nombre": "Comida Rápida"
+    }
+  ]
+}
+```
 
-Response 200 OK:
+**Validaciones:**
+- ✅ `nombre` es requerido y debe ser único
+- ✅ `direccion` debe ser una dirección válida
+- ✅ `calificacionPromedio` debe estar entre 0.0 y 5.0
+- ✅ `tiempoEsperaMinutos` debe ser mayor a 0
+- ✅ `costoEnvioBase` debe ser mayor o igual a 0
+- ✅ Las URLs de imágenes deben ser válidas
+
+**Respuesta Exitosa (201 Created):**
+```json
+{
+  "id": 10,
+  "nombre": "Burger King",
+  "descripcion": "Las mejores hamburguesas a la parrilla",
+  "imagenLogoUrl": "https://example.com/logo.jpg",
+  "imagenPortadaUrl": "https://example.com/banner.jpg",
+  "direccion": "Av. Javier Prado 123, San Isidro",
+  "calificacionPromedio": 4.5,
+  "estaAbierto": true,
+  "tiempoEsperaMinutos": 30,
+  "costoEnvioBase": 5.00,
+  "categorias": [
+    {
+      "id": 1,
+      "nombre": "Hamburguesas"
+    },
+    {
+      "id": 3,
+      "nombre": "Comida Rápida"
+    }
+  ]
+}
+```
+
+**Respuestas de Error:**
+
+| Código | Descripción | Ejemplo |
+|--------|-------------|---------|
+| 400 Bad Request | Datos inválidos | `{ "message": "El campo 'nombre' es requerido" }` |
+| 400 Bad Request | Nombre duplicado | `{ "message": "Ya existe un restaurante con ese nombre" }` |
+
+**Ejemplo de Uso (cURL):**
+```bash
+curl -X POST http://localhost:8080/api/restaurantes \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Burger King",
+    "descripcion": "Las mejores hamburguesas a la parrilla",
+    "imagenLogoUrl": "https://example.com/logo.jpg",
+    "imagenPortadaUrl": "https://example.com/banner.jpg",
+    "direccion": "Av. Javier Prado 123, San Isidro",
+    "calificacionPromedio": 4.5,
+    "estaAbierto": true,
+    "tiempoEsperaMinutos": 30,
+    "costoEnvioBase": 5.00,
+    "categorias": [
+      { "id": 1, "nombre": "Hamburguesas" },
+      { "id": 3, "nombre": "Comida Rápida" }
+    ]
+  }'
+```
+
+**Notas Importantes:**
+- 📸 Las imágenes deben estar alojadas en un servicio externo (ej: Cloudinary, AWS S3)
+- 🏷️ Las categorías deben existir previamente en la base de datos
+- ⭐ La calificación inicial es opcional, por defecto será 0.0
+- 🕐 El `tiempoEsperaMinutos` es estimado y puede variar según demanda
+
+---
+
+#### 📋 **GET** `/api/restaurantes` - Listar Todos los Restaurantes
+
+Obtiene la lista completa de todos los restaurantes registrados en el sistema.
+
+**Headers:**
+```
+Content-Type: application/json
+```
+
+**Respuesta Exitosa (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "nombre": "Burger King",
+    "descripcion": "Las mejores hamburguesas",
+    "imagenLogoUrl": "https://example.com/logo.jpg",
+    "imagenPortadaUrl": "https://example.com/banner.jpg",
+    "direccion": "Av. Javier Prado 123",
+    "calificacionPromedio": 4.5,
+    "estaAbierto": true,
+    "tiempoEsperaMinutos": 30,
+    "costoEnvioBase": 5.00,
+    "categorias": [...]
+  },
+  {
+    "id": 2,
+    "nombre": "KFC",
+    "descripcion": "Pollo frito estilo Kentucky",
+    "imagenLogoUrl": "https://example.com/kfc-logo.jpg",
+    "imagenPortadaUrl": "https://example.com/kfc-banner.jpg",
+    "direccion": "Av. Larco 456, Miraflores",
+    "calificacionPromedio": 4.3,
+    "estaAbierto": false,
+    "tiempoEsperaMinutos": 25,
+    "costoEnvioBase": 4.50,
+    "categorias": [...]
+  }
+]
+```
+
+**Ejemplo de Uso:**
+```bash
+curl -X GET http://localhost:8080/api/restaurantes
+```
+
+---
+
+#### 🔍 **GET** `/api/restaurantes/{id}` - Obtener Restaurante por ID
+
+Obtiene la información detallada de un restaurante específico.
+
+**Path Parameters:**
+- `id` (Long) - ID del restaurante
+
+**Respuesta Exitosa (200 OK):**
+```json
+{
+  "id": 1,
+  "nombre": "Burger King",
+  "descripcion": "Las mejores hamburguesas a la parrilla",
+  "imagenLogoUrl": "https://example.com/logo.jpg",
+  "imagenPortadaUrl": "https://example.com/banner.jpg",
+  "direccion": "Av. Javier Prado 123, San Isidro",
+  "calificacionPromedio": 4.5,
+  "estaAbierto": true,
+  "tiempoEsperaMinutos": 30,
+  "costoEnvioBase": 5.00,
+  "categorias": [
+    {
+      "id": 1,
+      "nombre": "Hamburguesas"
+    }
+  ]
+}
+```
+
+**Respuestas de Error:**
+
+| Código | Descripción |
+|--------|-------------|
+| 404 Not Found | Restaurante no encontrado |
+
+**Ejemplo de Uso:**
+```bash
+curl -X GET http://localhost:8080/api/restaurantes/1
+```
+
+---
+
+#### 🔎 **GET** `/api/restaurantes/buscar?nombre={nombre}` - Buscar por Nombre
+
+Busca restaurantes cuyo nombre contenga el texto especificado (búsqueda no sensible a mayúsculas).
+
+**Query Parameters:**
+- `nombre` (String) - Texto a buscar en el nombre del restaurante
+
+**Ejemplo de Uso:**
+```bash
+# Buscar restaurantes que contengan "burger"
+curl -X GET "http://localhost:8080/api/restaurantes/buscar?nombre=burger"
+```
+
+**Respuesta Exitosa (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "nombre": "Burger King",
+    "descripcion": "Las mejores hamburguesas",
+    ...
+  }
+]
+```
+
+---
+
+#### 🔓 **GET** `/api/restaurantes/filtrar/disponibilidad?estaAbierto={bool}` - Filtrar por Apertura
+
+Filtra restaurantes según su estado de apertura.
+
+**Query Parameters:**
+- `estaAbierto` (Boolean) - `true` para abiertos, `false` para cerrados
+
+**Ejemplo de Uso:**
+```bash
+# Obtener solo restaurantes abiertos
+curl -X GET "http://localhost:8080/api/restaurantes/filtrar/disponibilidad?estaAbierto=true"
+```
+
+---
+
+#### 🏷️ **GET** `/api/restaurantes/filtrar/categoria/{categoriaId}` - Filtrar por Categoría
+
+Obtiene todos los restaurantes que pertenecen a una categoría específica.
+
+**Path Parameters:**
+- `categoriaId` (Long) - ID de la categoría
+
+**Ejemplo de Uso:**
+```bash
+# Obtener todos los restaurantes de categoría "Hamburguesas" (id=1)
+curl -X GET http://localhost:8080/api/restaurantes/filtrar/categoria/1
+```
+
+---
+
+### 4. 🍔 Productos
+
+#### Tabla de Endpoints
+
+| Método | Endpoint | Descripción | Autenticación |
+|--------|----------|-------------|---------------|
+| POST | `/api/productos` | Crear nuevo producto | Requerida |
+| GET | `/api/productos/restaurante/{restauranteId}` | Productos de un restaurante | No requerida |
+| GET | `/api/productos/restaurante/{restauranteId}/disponibles` | Solo productos disponibles | No requerida |
+| GET | `/api/productos/{id}` | Detalle del producto con opciones | No requerida |
+
+---
+
+#### 🍕 **POST** `/api/productos` - Crear Producto
+
+Crea un nuevo producto asociado a un restaurante específico. Puede incluir grupos de opciones para personalización.
+
+**Headers:**
+```
+Content-Type: application/json
+```
+
+**Body (JSON):**
+```json
+{
+  "restauranteId": 1,                         // REQUERIDO - ID del restaurante al que pertenece
+  "nombre": "Whopper",                        // REQUERIDO - Nombre del producto
+  "descripcion": "Hamburguesa clásica con carne a la parrilla", // REQUERIDO - Descripción
+  "precio": 15.90,                            // REQUERIDO - Precio base del producto
+  "imagenUrl": "https://example.com/whopper.jpg", // REQUERIDO - URL de la imagen del producto
+  "disponible": true,                         // REQUERIDO - Disponibilidad del producto
+  "gruposOpciones": [                         // OPCIONAL - Grupos de opciones de personalización
+    {
+      "nombre": "Elige tu bebida",           // REQUERIDO - Nombre del grupo
+      "esObligatorio": true,                 // REQUERIDO - Si es obligatorio seleccionar
+      "seleccionMinima": 1,                  // REQUERIDO - Cantidad mínima a seleccionar
+      "seleccionMaxima": 1,                  // REQUERIDO - Cantidad máxima a seleccionar
+      "opciones": [                          // REQUERIDO - Lista de opciones disponibles
+        {
+          "nombre": "Coca Cola 500ml",       // REQUERIDO - Nombre de la opción
+          "precioExtra": 0.00                // REQUERIDO - Precio adicional (0 si está incluido)
+        },
+        {
+          "nombre": "Inca Kola 500ml",
+          "precioExtra": 0.00
+        },
+        {
+          "nombre": "Sprite 500ml",
+          "precioExtra": 0.00
+        }
+      ]
+    },
+    {
+      "nombre": "Extras",
+      "esObligatorio": false,
+      "seleccionMinima": 0,
+      "seleccionMaxima": 5,
+      "opciones": [
+        {
+          "nombre": "Queso extra",
+          "precioExtra": 2.50
+        },
+        {
+          "nombre": "Tocino",
+          "precioExtra": 3.00
+        },
+        {
+          "nombre": "Papas grandes",
+          "precioExtra": 4.50
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Validaciones:**
+- ✅ `restauranteId` debe existir en la base de datos
+- ✅ `nombre` es requerido
+- ✅ `precio` debe ser mayor a 0
+- ✅ `imagenUrl` debe ser una URL válida
+- ✅ En cada grupo de opciones: `seleccionMinima` ≤ `seleccionMaxima`
+- ✅ Si `esObligatorio` es true, `seleccionMinima` debe ser al menos 1
+- ✅ `precioExtra` puede ser 0 o positivo
+
+**Respuesta Exitosa (201 Created):**
+```json
+{
+  "id": 15,
+  "restauranteId": 1,
+  "nombre": "Whopper",
+  "descripcion": "Hamburguesa clásica con carne a la parrilla",
+  "precio": 15.90,
+  "imagenUrl": "https://example.com/whopper.jpg",
+  "disponible": true,
+  "gruposOpciones": [
+    {
+      "id": 10,
+      "nombre": "Elige tu bebida",
+      "esObligatorio": true,
+      "seleccionMinima": 1,
+      "seleccionMaxima": 1,
+      "opciones": [
+        {
+          "id": 25,
+          "nombre": "Coca Cola 500ml",
+          "precioExtra": 0.00
+        },
+        {
+          "id": 26,
+          "nombre": "Inca Kola 500ml",
+          "precioExtra": 0.00
+        },
+        {
+          "id": 27,
+          "nombre": "Sprite 500ml",
+          "precioExtra": 0.00
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "nombre": "Extras",
+      "esObligatorio": false,
+      "seleccionMinima": 0,
+      "seleccionMaxima": 5,
+      "opciones": [
+        {
+          "id": 28,
+          "nombre": "Queso extra",
+          "precioExtra": 2.50
+        },
+        {
+          "id": 29,
+          "nombre": "Tocino",
+          "precioExtra": 3.00
+        },
+        {
+          "id": 30,
+          "nombre": "Papas grandes",
+          "precioExtra": 4.50
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Respuestas de Error:**
+
+| Código | Descripción | Ejemplo |
+|--------|-------------|---------|
+| 400 Bad Request | Datos inválidos | `{ "message": "El campo 'nombre' es requerido" }` |
+| 404 Not Found | Restaurante no encontrado | `{ "message": "Restaurante no encontrado" }` |
+| 400 Bad Request | Precio inválido | `{ "message": "El precio debe ser mayor a 0" }` |
+
+**Ejemplo de Uso (cURL):**
+```bash
+# Producto simple sin opciones
+curl -X POST http://localhost:8080/api/productos \
+  -H "Content-Type: application/json" \
+  -d '{
+    "restauranteId": 1,
+    "nombre": "Pizza Margarita",
+    "descripcion": "Pizza clásica con tomate y mozzarella",
+    "precio": 25.00,
+    "imagenUrl": "https://example.com/pizza.jpg",
+    "disponible": true
+  }'
+
+# Producto con opciones de personalización
+curl -X POST http://localhost:8080/api/productos \
+  -H "Content-Type: application/json" \
+  -d '{
+    "restauranteId": 1,
+    "nombre": "Whopper",
+    "descripcion": "Hamburguesa clásica",
+    "precio": 15.90,
+    "imagenUrl": "https://example.com/whopper.jpg",
+    "disponible": true,
+    "gruposOpciones": [
+      {
+        "nombre": "Elige tu bebida",
+        "esObligatorio": true,
+        "seleccionMinima": 1,
+        "seleccionMaxima": 1,
+        "opciones": [
+          { "nombre": "Coca Cola", "precioExtra": 0.00 },
+          { "nombre": "Inca Kola", "precioExtra": 0.00 }
+        ]
+      }
+    ]
+  }'
+```
+
+**Notas Importantes:**
+- 📸 Las imágenes deben estar alojadas en un servicio externo (Cloudinary, AWS S3, Firebase Storage)
+- 🏷️ Los grupos de opciones son útiles para personalización (bebidas, tamaños, extras)
+- 💰 El precio final del producto = `precio` + suma de `precioExtra` de opciones seleccionadas
+- ✅ Si no hay opciones, simplemente omitir el campo `gruposOpciones` o enviarlo como array vacío `[]`
+
+---
+
+#### 📋 **GET** `/api/productos/restaurante/{restauranteId}` - Productos de un Restaurante
+
+Obtiene todos los productos de un restaurante específico, incluyendo disponibles y no disponibles.
+
+**Path Parameters:**
+- `restauranteId` (Long) - ID del restaurante
+
+**Respuesta Exitosa (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "restauranteId": 1,
+    "nombre": "Whopper",
+    "descripcion": "Hamburguesa clásica",
+    "precio": 15.90,
+    "imagenUrl": "https://example.com/whopper.jpg",
+    "disponible": true,
+    "gruposOpciones": [...]
+  },
+  {
+    "id": 2,
+    "restauranteId": 1,
+    "nombre": "Big King",
+    "descripcion": "Doble carne con queso",
+    "precio": 18.50,
+    "imagenUrl": "https://example.com/bigking.jpg",
+    "disponible": false,
+    "gruposOpciones": [...]
+  }
+]
+```
+
+**Ejemplo de Uso:**
+```bash
+curl -X GET http://localhost:8080/api/productos/restaurante/1
+```
+
+---
+
+#### ✅ **GET** `/api/productos/restaurante/{restauranteId}/disponibles` - Solo Productos Disponibles
+
+Obtiene únicamente los productos disponibles de un restaurante.
+
+**Path Parameters:**
+- `restauranteId` (Long) - ID del restaurante
+
+**Respuesta Exitosa (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "restauranteId": 1,
+    "nombre": "Whopper",
+    "descripcion": "Hamburguesa clásica",
+    "precio": 15.90,
+    "imagenUrl": "https://example.com/whopper.jpg",
+    "disponible": true,
+    "gruposOpciones": [...]
+  }
+]
+```
+
+**Ejemplo de Uso:**
+```bash
+curl -X GET http://localhost:8080/api/productos/restaurante/1/disponibles
+```
+
+**Uso en Android:**
+```kotlin
+// Usar este endpoint para mostrar el menú disponible en la app
+GET /api/productos/restaurante/1/disponibles
+```
+
+---
+
+#### 🔍 **GET** `/api/productos/{id}` - Detalle del Producto
+
+Obtiene la información completa de un producto específico, incluyendo todos sus grupos de opciones.
+
+**Path Parameters:**
+- `id` (Long) - ID del producto
+
+**Respuesta Exitosa (200 OK):**
+```json
 {
   "id": 1,
   "restauranteId": 1,
   "nombre": "Whopper",
-  "descripcion": "Hamburguesa clásica",
+  "descripcion": "Hamburguesa clásica con carne a la parrilla, lechuga, tomate, cebolla, pepinillos y salsa especial",
   "precio": 15.90,
+  "imagenUrl": "https://example.com/whopper.jpg",
   "disponible": true,
   "gruposOpciones": [
     {
       "id": 1,
+      "nombre": "Elige tu bebida",
+      "esObligatorio": true,
+      "seleccionMinima": 1,
+      "seleccionMaxima": 1,
+      "opciones": [
+        {
+          "id": 1,
+          "nombre": "Coca Cola 500ml",
+          "precioExtra": 0.00
+        },
+        {
+          "id": 2,
+          "nombre": "Inca Kola 500ml",
+          "precioExtra": 0.00
+        },
+        {
+          "id": 3,
+          "nombre": "Sprite 500ml",
+          "precioExtra": 0.00
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "nombre": "Extras",
+      "esObligatorio": false,
+      "seleccionMinima": 0,
+      "seleccionMaxima": 5,
+      "opciones": [
+        {
+          "id": 4,
+          "nombre": "Queso extra",
+          "precioExtra": 2.50
+        },
+        {
+          "id": 5,
+          "nombre": "Tocino",
+          "precioExtra": 3.00
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Respuestas de Error:**
+
+| Código | Descripción |
+|--------|-------------|
+| 404 Not Found | Producto no encontrado |
+
+**Ejemplo de Uso:**
+```bash
+curl -X GET http://localhost:8080/api/productos/1
+```
+
+**Uso en Android:**
+```kotlin
+// Usar este endpoint para mostrar pantalla de detalle del producto
+// con todas las opciones de personalización antes de agregar al carrito
+GET /api/productos/{id}
+```
+
+**Cálculo de Precio Final:**
+```
+Precio Total = (precio_base * cantidad) + suma(precioExtra de opciones seleccionadas * cantidad)
+
+Ejemplo:
+- Whopper: S/ 15.90
+- Opciones: Queso extra (S/ 2.50) + Tocino (S/ 3.00)
+- Cantidad: 2
+
+Total = (15.90 * 2) + (2.50 + 3.00) * 2
+Total = 31.80 + 11.00
+Total = S/ 42.80
+```
+
+---
+
+### 5. 📦 Pedidos
       "nombre": "Elige tu bebida",
       "esObligatorio": true,
       "seleccionMinima": 1,
