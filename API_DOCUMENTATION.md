@@ -410,7 +410,96 @@ curl -X PUT http://localhost:8080/api/usuarios/1 \
 | PUT | `/api/direcciones/{id}` | Actualizar dirección |
 | DELETE | `/api/direcciones/{id}` | Eliminar dirección |
 
-### 3. 🍽️ Restaurantes
+### 3. 🏷️ Categorías
+
+Las categorías son utilizadas para clasificar los restaurantes. 
+
+#### Tabla de Endpoints
+
+| Método | Endpoint | Descripción | Autenticación |
+|--------|----------|-------------|---------------|
+| GET | `/api/categorias` | Listar todas las categorías | No requerida |
+| GET | `/api/categorias/{id}` | Obtener categoría por ID | No requerida |
+
+---
+
+#### 📋 **GET** `/api/categorias` - Listar Todas las Categorías
+
+Obtiene la lista completa de categorías disponibles para los restaurantes.
+
+**Respuesta Exitosa (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "nombre": "Hamburguesas",
+    "imagenUrl": "https://example.com/categorias/hamburguesas.jpg"
+  },
+  {
+    "id": 2,
+    "nombre": "Pizza",
+    "imagenUrl": "https://example.com/categorias/pizza.jpg"
+  },
+  {
+    "id": 3,
+    "nombre": "Pollo",
+    "imagenUrl": "https://example.com/categorias/pollo.jpg"
+  },
+  {
+    "id": 4,
+    "nombre": "Comida China",
+    "imagenUrl": "https://example.com/categorias/china.jpg"
+  },
+  {
+    "id": 5,
+    "nombre": "Comida Criolla",
+    "imagenUrl": "https://example.com/categorias/criolla.jpg"
+  },
+  {
+    "id": 6,
+    "nombre": "Sushi",
+    "imagenUrl": "https://example.com/categorias/sushi.jpg"
+  }
+]
+```
+
+**Ejemplo de Uso:**
+```bash
+curl -X GET http://localhost:8080/api/categorias
+```
+
+---
+
+#### 🔍 **GET** `/api/categorias/{id}` - Obtener Categoría por ID
+
+Obtiene los detalles de una categoría específica.
+
+**Path Parameters:**
+- `id` (Long) - ID de la categoría
+
+**Respuesta Exitosa (200 OK):**
+```json
+{
+  "id": 1,
+  "nombre": "Hamburguesas",
+  "imagenUrl": "https://example.com/categorias/hamburguesas.jpg"
+}
+```
+
+**Respuestas de Error:**
+
+| Código | Descripción |
+|--------|-------------|
+| 404 Not Found | Categoría no encontrada |
+
+**Ejemplo de Uso:**
+```bash
+curl -X GET http://localhost:8080/api/categorias/1
+```
+
+---
+
+### 4. 🍽️ Restaurantes
 
 #### Tabla de Endpoints
 
@@ -446,15 +535,42 @@ Content-Type: application/json
   "estaAbierto": true,                                  // REQUERIDO - Estado de apertura
   "tiempoEsperaMinutos": 30,                           // REQUERIDO - Tiempo estimado de preparación
   "costoEnvioBase": 5.00,                              // REQUERIDO - Costo base de envío
-  "categorias": [                                       // OPCIONAL - Categorías del restaurante
+  "categorias": [                                       // OPCIONAL - Categorías del restaurante (deben existir)
     {
       "id": 1,
       "nombre": "Hamburguesas"
-    },
-    {
-      "id": 3,
-      "nombre": "Comida Rápida"
     }
+  ]
+}
+```
+
+**⚠️ IMPORTANTE - Categorías Disponibles:**
+
+Las categorías deben existir previamente en la base de datos. Estas son las categorías disponibles:
+
+| ID | Nombre |
+|----|--------|
+| 1  | Hamburguesas |
+| 2  | Pizza |
+| 3  | Pollo |
+| 4  | Comida China |
+| 5  | Comida Criolla |
+| 6  | Sushi |
+
+**Ejemplo - Enviar solo los IDs:**
+```json
+{
+  "nombre": "Burger King",
+  "descripcion": "Las mejores hamburguesas a la parrilla",
+  "imagenLogoUrl": "https://example.com/logo.jpg",
+  "imagenPortadaUrl": "https://example.com/banner.jpg",
+  "direccion": "Av. Javier Prado 123, San Isidro",
+  "calificacionPromedio": 4.5,
+  "estaAbierto": true,
+  "tiempoEsperaMinutos": 30,
+  "costoEnvioBase": 5.00,
+  "categorias": [
+    { "id": 1 }
   ]
 }
 ```
@@ -466,6 +582,7 @@ Content-Type: application/json
 - ✅ `tiempoEsperaMinutos` debe ser mayor a 0
 - ✅ `costoEnvioBase` debe ser mayor o igual a 0
 - ✅ Las URLs de imágenes deben ser válidas
+- ✅ **Las categorías deben existir en la base de datos**
 
 **Respuesta Exitosa (201 Created):**
 ```json
@@ -499,6 +616,7 @@ Content-Type: application/json
 |--------|-------------|---------|
 | 400 Bad Request | Datos inválidos | `{ "message": "El campo 'nombre' es requerido" }` |
 | 400 Bad Request | Nombre duplicado | `{ "message": "Ya existe un restaurante con ese nombre" }` |
+| 400 Bad Request | Categorías no existen | `{ "message": "Una o más categorías no existen" }` |
 
 **Ejemplo de Uso (cURL):**
 ```bash
@@ -515,15 +633,15 @@ curl -X POST http://localhost:8080/api/restaurantes \
     "tiempoEsperaMinutos": 30,
     "costoEnvioBase": 5.00,
     "categorias": [
-      { "id": 1, "nombre": "Hamburguesas" },
-      { "id": 3, "nombre": "Comida Rápida" }
+      { "id": 1 }
     ]
   }'
 ```
 
 **Notas Importantes:**
 - 📸 Las imágenes deben estar alojadas en un servicio externo (ej: Cloudinary, AWS S3)
-- 🏷️ Las categorías deben existir previamente en la base de datos
+- 🏷️ **IMPORTANTE: Las categorías deben existir previamente en la base de datos (IDs: 1-6)**
+- 🏷️ Solo necesitas enviar el `id` de la categoría, el `nombre` es opcional
 - ⭐ La calificación inicial es opcional, por defecto será 0.0
 - 🕐 El `tiempoEsperaMinutos` es estimado y puede variar según demanda
 
@@ -676,7 +794,7 @@ curl -X GET http://localhost:8080/api/restaurantes/filtrar/categoria/1
 
 ---
 
-### 4. 🍔 Productos
+### 5. 🍔 Productos
 
 #### Tabla de Endpoints
 
@@ -1054,24 +1172,7 @@ Total = S/ 42.80
 
 ---
 
-### 5. 📦 Pedidos
-      "nombre": "Elige tu bebida",
-      "esObligatorio": true,
-      "seleccionMinima": 1,
-      "seleccionMaxima": 1,
-      "opciones": [
-        {
-          "id": 1,
-          "nombre": "Coca Cola",
-          "precioExtra": 0.00
-        }
-      ]
-    }
-  ]
-}
-```
-
-### 5. 📦 Pedidos
+### 6. 📦 Pedidos
 
 El sistema de pedidos maneja todo el ciclo de vida de una orden, desde su creación hasta la entrega final. Incluye cálculo automático de costos, gestión de estados y personalización de productos.
 
@@ -1641,7 +1742,7 @@ GET /api/pedidos/1
 
 ---
 
-### 6. 💳 Pagos Simulados
+### 7. 💳 Pagos Simulados
 
 
 **⚠️ IMPORTANTE:** El sistema de pagos es completamente simulado y NO requiere integración con Stripe. Todos los pagos se procesan internamente de forma ficticia.

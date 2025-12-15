@@ -2,7 +2,9 @@ package com.example.chaski_backend.service;
 
 import com.example.chaski_backend.dto.RestauranteDTO;
 import com.example.chaski_backend.mapper.RestauranteMapper;
+import com.example.chaski_backend.model.Categoria;
 import com.example.chaski_backend.model.Restaurante;
+import com.example.chaski_backend.repository.CategoriaRepository;
 import com.example.chaski_backend.repository.RestauranteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,9 +20,26 @@ public class RestauranteService {
 
     private final RestauranteRepository restauranteRepository;
     private final RestauranteMapper restauranteMapper;
+    private final CategoriaRepository categoriaRepository;
 
     public RestauranteDTO crear(RestauranteDTO dto) {
         Restaurante restaurante = restauranteMapper.toEntity(dto);
+
+        // Si hay categorías, buscar las existentes por ID
+        if (dto.getCategorias() != null && !dto.getCategorias().isEmpty()) {
+            List<Long> categoriaIds = dto.getCategorias().stream()
+                    .map(categoriaDTO -> categoriaDTO.getId())
+                    .collect(Collectors.toList());
+
+            List<Categoria> categoriasExistentes = categoriaRepository.findAllById(categoriaIds);
+
+            if (categoriasExistentes.size() != categoriaIds.size()) {
+                throw new IllegalArgumentException("Una o más categorías no existen");
+            }
+
+            restaurante.setCategorias(categoriasExistentes);
+        }
+
         Restaurante guardado = restauranteRepository.save(restaurante);
         return restauranteMapper.toDto(guardado);
     }
