@@ -12,5 +12,6 @@ public class UsuarioRegistroDTO {
     private String email;
     private String password;
     private String telefono;
+    private String imagenPerfilUrl; // OPCIONAL - URL de la imagen de perfil
 }
 

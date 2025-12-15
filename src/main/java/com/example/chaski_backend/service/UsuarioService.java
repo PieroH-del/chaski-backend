@@ -35,6 +35,7 @@ public class UsuarioService {
         usuario.setEmail(dto.getEmail());
         usuario.setPassw(passwordEncoder.encode(dto.getPassword()));
         usuario.setTelefono(dto.getTelefono());
+        usuario.setImagenPerfilUrl(dto.getImagenPerfilUrl()); // Puede ser null
         usuario.setActivo(true);
 
         Usuario guardado = usuarioRepository.save(usuario);

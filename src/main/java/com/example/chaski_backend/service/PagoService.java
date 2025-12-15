@@ -10,18 +10,13 @@ import com.example.chaski_backend.model.Pago;
 import com.example.chaski_backend.model.Pedido;
 import com.example.chaski_backend.repository.PagoRepository;
 import com.example.chaski_backend.repository.PedidoRepository;
-import com.stripe.Stripe;
-import com.stripe.exception.StripeException;
-import com.stripe.model.PaymentIntent;
-import com.stripe.param.PaymentIntentCreateParams;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
@@ -31,9 +26,13 @@ public class PagoService {
     private final PedidoRepository pedidoRepository;
     private final PagoMapper pagoMapper;
 
-    @Value("${stripe.api.key}")
-    private String stripeApiKey;
+    @Value("${payment.auto.approve:false}")
+    private boolean autoApprovePayments;
 
+    /**
+     * Crea un pago simulado sin integración con Stripe.
+     * Todos los pagos se crean con referencias ficticias.
+     */
     @Transactional
     public PagoDTO crearPago(CrearPagoDTO dto) {
         Pedido pedido = pedidoRepository.findById(dto.getPedidoId())
@@ -48,25 +47,32 @@ public class PagoService {
         pago.setPedido(pedido);
         pago.setMonto(dto.getMonto());
         pago.setMetodo(dto.getMetodo());
-        pago.setEstado(EstadoPago.PENDIENTE);
 
-        // Si es efectivo, marcar como pendiente
-        if (dto.getMetodo() == MetodoPago.EFECTIVO) {
-            pago.setReferenciaPasarela("EFECTIVO");
+        // Generar referencia ficticia para todos los métodos de pago
+        String referenciaSimulada = generarReferenciaSimulada(dto.getMetodo());
+        pago.setReferenciaPasarela(referenciaSimulada);
+
+        // Si auto-aprobación está activada, marcar como completado automáticamente
+        if (autoApprovePayments) {
+            pago.setEstado(EstadoPago.COMPLETADO);
+            pago.setFechaPago(LocalDateTime.now());
+
+            // Actualizar estado del pedido
+            pedido.setEstado(EstadoPedido.CONFIRMADO_TIENDA);
+            pedidoRepository.save(pedido);
         } else {
-            // Para otros métodos, crear intención de pago con Stripe
-            try {
-                String paymentIntentId = crearIntencionPagoStripe(dto.getMonto().longValue());
-                pago.setReferenciaPasarela(paymentIntentId);
-            } catch (StripeException e) {
-                throw new RuntimeException("Error al crear la intención de pago: " + e.getMessage());
-            }
+            // Por defecto, crear como PENDIENTE
+            pago.setEstado(EstadoPago.PENDIENTE);
         }
 
         Pago pagoGuardado = pagoRepository.save(pago);
         return pagoMapper.toDto(pagoGuardado);
     }
 
+    /**
+     * Confirma un pago pendiente de forma manual.
+     * Simula la aprobación del pago y actualiza el estado del pedido.
+     */
     @Transactional
     public PagoDTO confirmarPago(Long pagoId) {
         Pago pago = pagoRepository.findById(pagoId)
@@ -79,7 +85,7 @@ public class PagoService {
         pago.setEstado(EstadoPago.COMPLETADO);
         pago.setFechaPago(LocalDateTime.now());
 
-        // Actualizar estado del pedido
+        // Actualizar estado del pedido a CONFIRMADO_TIENDA
         Pedido pedido = pago.getPedido();
         pedido.setEstado(EstadoPedido.CONFIRMADO_TIENDA);
         pedidoRepository.save(pedido);
@@ -88,6 +94,10 @@ public class PagoService {
         return pagoMapper.toDto(pagoActualizado);
     }
 
+    /**
+     * Marca un pago como fallido.
+     * Simula el rechazo del pago.
+     */
     @Transactional
     public PagoDTO marcarComoFallido(Long pagoId) {
         Pago pago = pagoRepository.findById(pagoId)
@@ -99,6 +109,9 @@ public class PagoService {
         return pagoMapper.toDto(pagoActualizado);
     }
 
+    /**
+     * Obtiene el pago asociado a un pedido.
+     */
     @Transactional(readOnly = true)
     public PagoDTO obtenerPorPedido(Long pedidoId) {
         Pago pago = pagoRepository.findByPedidoId(pedidoId)
@@ -106,78 +119,51 @@ public class PagoService {
         return pagoMapper.toDto(pago);
     }
 
+    /**
+     * Obtiene un pago por su ID.
+     */
     @Transactional(readOnly = true)
-    public PagoDTO obtenerPorReferencia(String referenciaPasarela) {
-        Pago pago = pagoRepository.findByReferenciaPasarela(referenciaPasarela)
+    public PagoDTO obtenerPorId(Long pagoId) {
+        Pago pago = pagoRepository.findById(pagoId)
                 .orElseThrow(() -> new RuntimeException("Pago no encontrado"));
         return pagoMapper.toDto(pago);
     }
 
-    @Transactional
-    public PagoDTO procesarWebhookStripe(Map<String, Object> payload) {
-        // Procesar webhook de Stripe
-        String paymentIntentId = (String) payload.get("id");
-        String status = (String) payload.get("status");
+    /**
+     * Genera una referencia simulada para el pago.
+     * Formato: METODO-TIMESTAMP-RANDOM
+     * Ejemplos:
+     * - TARJETA-1702564321-A3F9
+     * - YAPE-1702564322-B7C1
+     * - EFECTIVO-1702564323-D2E8
+     */
+    private String generarReferenciaSimulada(MetodoPago metodo) {
+        long timestamp = System.currentTimeMillis() / 1000; // Timestamp en segundos
+        String randomCode = generarCodigoAleatorio(4);
 
-        Pago pago = pagoRepository.findByReferenciaPasarela(paymentIntentId)
-                .orElseThrow(() -> new RuntimeException("Pago no encontrado"));
+        String prefijo = switch (metodo) {
+            case TARJETA_CREDITO -> "TC";
+            case TARJETA_DEBITO -> "TD";
+            case YAPE -> "YAPE";
+            case EFECTIVO -> "EFEC";
+        };
 
-        switch (status) {
-            case "succeeded":
-                pago.setEstado(EstadoPago.COMPLETADO);
-                pago.setFechaPago(LocalDateTime.now());
-
-                // Actualizar estado del pedido
-                Pedido pedido = pago.getPedido();
-                pedido.setEstado(EstadoPedido.CONFIRMADO_TIENDA);
-                pedidoRepository.save(pedido);
-                break;
-
-            case "payment_failed":
-                pago.setEstado(EstadoPago.FALLIDO);
-                break;
-
-            case "canceled":
-                pago.setEstado(EstadoPago.FALLIDO);
-                break;
-        }
-
-        Pago pagoGuardado = pagoRepository.save(pago);
-        return pagoMapper.toDto(pagoGuardado);
+        return String.format("SIM-%s-%d-%s", prefijo, timestamp, randomCode);
     }
 
-    private String crearIntencionPagoStripe(Long monto) throws StripeException {
-        Stripe.apiKey = stripeApiKey;
+    /**
+     * Genera un código alfanumérico aleatorio.
+     */
+    private String generarCodigoAleatorio(int longitud) {
+        String caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        Random random = new Random();
+        StringBuilder codigo = new StringBuilder();
 
-        // Stripe maneja los montos en centavos
-        long montoCentavos = monto * 100;
-
-        PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
-                .setAmount(montoCentavos)
-                .setCurrency("pen") // Soles peruanos
-                .addPaymentMethodType("card")
-                .build();
-
-        PaymentIntent paymentIntent = PaymentIntent.create(params);
-        return paymentIntent.getId();
-    }
-
-    public Map<String, String> obtenerClientSecret(Long pagoId) {
-        Pago pago = pagoRepository.findById(pagoId)
-                .orElseThrow(() -> new RuntimeException("Pago no encontrado"));
-
-        try {
-            Stripe.apiKey = stripeApiKey;
-            PaymentIntent paymentIntent = PaymentIntent.retrieve(pago.getReferenciaPasarela());
-
-            Map<String, String> response = new HashMap<>();
-            response.put("clientSecret", paymentIntent.getClientSecret());
-            response.put("paymentIntentId", paymentIntent.getId());
-
-            return response;
-        } catch (StripeException e) {
-            throw new RuntimeException("Error al obtener el client secret: " + e.getMessage());
+        for (int i = 0; i < longitud; i++) {
+            codigo.append(caracteres.charAt(random.nextInt(caracteres.length())));
         }
+
+        return codigo.toString();
     }
 }
 

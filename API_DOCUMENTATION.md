@@ -123,38 +123,284 @@ OpcionDetallePedido N──1 Opcion
 
 ## API Endpoints
 
-### 1. Autenticación y Usuarios
+### 1. 🔐 Autenticación y Usuarios
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| POST | `/api/usuarios/registro` | Registrar nuevo usuario |
-| POST | `/api/usuarios/login` | Iniciar sesión |
-| GET | `/api/usuarios/{id}` | Obtener usuario por ID |
-| PUT | `/api/usuarios/{id}` | Actualizar perfil |
-| POST | `/api/usuarios/validar-credenciales` | Validar email/password |
+#### Tabla de Endpoints
 
-**Ejemplo - Registro:**
+| Método | Endpoint | Descripción | Autenticación |
+|--------|----------|-------------|---------------|
+| POST | `/api/usuarios/registro` | Registrar nuevo usuario | No requerida |
+| POST | `/api/usuarios/login` | Iniciar sesión | No requerida |
+| GET | `/api/usuarios/{id}` | Obtener perfil de usuario | Requerida |
+| PUT | `/api/usuarios/{id}` | Actualizar perfil de usuario | Requerida |
+
+---
+
+#### 📝 **POST** `/api/usuarios/registro` - Registrar Usuario
+
+Crea una nueva cuenta de usuario en el sistema. La contraseña se almacena de forma segura usando BCrypt.
+
+**Headers:**
+```
+Content-Type: application/json
+```
+
+**Body (JSON):**
 ```json
-POST /api/usuarios/registro
 {
-  "nombre": "Juan Pérez",
-  "email": "juan@example.com",
-  "password": "password123",
-  "telefono": "987654321"
+  "nombre": "Juan Pérez",           // REQUERIDO - Nombre completo del usuario
+  "email": "juan@example.com",      // REQUERIDO - Email único, usado para login
+  "password": "MiPassword123",      // REQUERIDO - Mínimo 6 caracteres (se hashea con BCrypt)
+  "telefono": "987654321",          // REQUERIDO - Número de teléfono
+  "imagenPerfilUrl": "https://..."  // OPCIONAL - URL de la imagen de perfil del usuario
 }
+```
 
-Response 201 Created:
+**Validaciones:**
+- ✅ `email` debe ser único en el sistema
+- ✅ `password` se hashea automáticamente con BCrypt antes de guardar
+- ✅ `telefono` debe ser válido
+- ✅ `imagenPerfilUrl` es completamente opcional (puede omitirse o enviarse como `null`)
+
+**Respuesta Exitosa (201 Created):**
+```json
 {
   "id": 1,
   "nombre": "Juan Pérez",
   "email": "juan@example.com",
   "telefono": "987654321",
-  "fechaRegistro": "2025-01-14T10:00:00",
+  "imagenPerfilUrl": "https://example.com/perfil.jpg",  // null si no se envió
+  "fechaRegistro": "2025-12-14T10:30:00",
   "activo": true
 }
 ```
 
-### 2. Direcciones
+**Respuestas de Error:**
+
+| Código | Descripción | Ejemplo |
+|--------|-------------|---------|
+| 400 Bad Request | Email ya registrado | `{ "message": "El email ya está registrado" }` |
+| 400 Bad Request | Datos inválidos | `{ "message": "El campo 'nombre' es requerido" }` |
+
+**Ejemplo de Uso (cURL):**
+```bash
+# Sin imagen de perfil
+curl -X POST http://localhost:8080/api/usuarios/registro \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "María García",
+    "email": "maria@example.com",
+    "password": "SecurePass456",
+    "telefono": "912345678"
+  }'
+
+# Con imagen de perfil
+curl -X POST http://localhost:8080/api/usuarios/registro \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "María García",
+    "email": "maria@example.com",
+    "password": "SecurePass456",
+    "telefono": "912345678",
+    "imagenPerfilUrl": "https://ejemplo.com/maria.jpg"
+  }'
+```
+
+**Notas Importantes:**
+- 📸 La imagen de perfil debe estar alojada en un servicio externo (ej: Cloudinary, AWS S3, Firebase Storage)
+- 🔒 La contraseña nunca se devuelve en las respuestas por seguridad
+- ✅ El usuario se crea con `activo: true` por defecto
+- 📧 El email se usa como identificador único para el login
+
+---
+
+#### 🔓 **POST** `/api/usuarios/login` - Iniciar Sesión
+
+Autentica a un usuario verificando sus credenciales (email y contraseña). Si las credenciales son correctas, retorna los datos del usuario.
+
+**Headers:**
+```
+Content-Type: application/json
+```
+
+**Body (JSON):**
+```json
+{
+  "email": "juan@example.com",     // REQUERIDO - Email registrado
+  "password": "MiPassword123"      // REQUERIDO - Contraseña en texto plano
+}
+```
+
+**Validaciones:**
+- ✅ El email debe existir en la base de datos
+- ✅ La contraseña se valida contra el hash almacenado (BCrypt)
+- ✅ El usuario debe estar activo (`activo: true`)
+
+**Respuesta Exitosa (200 OK):**
+```json
+{
+  "id": 1,
+  "nombre": "Juan Pérez",
+  "email": "juan@example.com",
+  "telefono": "987654321",
+  "imagenPerfilUrl": "https://example.com/perfil.jpg",
+  "fechaRegistro": "2025-12-14T10:30:00",
+  "activo": true
+}
+```
+
+**Respuestas de Error:**
+
+| Código | Descripción | Ejemplo |
+|--------|-------------|---------|
+| 400 Bad Request | Credenciales incorrectas | `{ "message": "Credenciales inválidas" }` |
+| 400 Bad Request | Usuario inactivo | `{ "message": "Usuario inactivo" }` |
+| 400 Bad Request | Campos faltantes | `{ "message": "Email y password son requeridos" }` |
+
+**Ejemplo de Uso (cURL):**
+```bash
+curl -X POST http://localhost:8080/api/usuarios/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "juan@example.com",
+    "password": "MiPassword123"
+  }'
+```
+
+**Flujo de Autenticación:**
+```
+1. Usuario envía email + password
+2. Backend busca usuario por email
+3. Backend valida password con BCrypt.matches()
+4. Si es válido → retorna datos del usuario
+5. Si es inválido → retorna error 400
+```
+
+**Notas de Seguridad:**
+- 🔒 Las contraseñas se almacenan hasheadas con BCrypt (nunca en texto plano)
+- 🔒 La contraseña nunca se incluye en la respuesta
+- ⚠️ Ambos errores (email no existe / password incorrecta) retornan el mismo mensaje para seguridad
+- ✅ Se valida que el usuario esté activo antes de permitir el login
+
+**Uso en Android:**
+```kotlin
+// Guardar el ID del usuario después del login exitoso
+val usuarioId = response.id
+SharedPreferences.edit()
+    .putLong("usuario_id", usuarioId)
+    .putString("usuario_nombre", response.nombre)
+    .putString("usuario_email", response.email)
+    .apply()
+
+// Usar el ID en requests subsecuentes
+// Ej: GET /api/pedidos/usuario/{usuarioId}
+```
+
+---
+
+#### 👤 **GET** `/api/usuarios/{id}` - Obtener Perfil de Usuario
+
+Obtiene la información completa de un usuario por su ID.
+
+**Headers:**
+```
+Content-Type: application/json
+```
+
+**Path Parameters:**
+- `id` (Long) - ID del usuario
+
+**Respuesta Exitosa (200 OK):**
+```json
+{
+  "id": 1,
+  "nombre": "Juan Pérez",
+  "email": "juan@example.com",
+  "telefono": "987654321",
+  "imagenPerfilUrl": "https://example.com/perfil.jpg",
+  "fechaRegistro": "2025-12-14T10:30:00",
+  "activo": true
+}
+```
+
+**Respuestas de Error:**
+
+| Código | Descripción |
+|--------|-------------|
+| 404 Not Found | Usuario no encontrado |
+
+**Ejemplo de Uso:**
+```bash
+curl -X GET http://localhost:8080/api/usuarios/1
+```
+
+---
+
+#### ✏️ **PUT** `/api/usuarios/{id}` - Actualizar Perfil
+
+Actualiza la información del perfil de un usuario. Solo se actualizan los campos enviados.
+
+**Headers:**
+```
+Content-Type: application/json
+```
+
+**Path Parameters:**
+- `id` (Long) - ID del usuario a actualizar
+
+**Body (JSON) - Todos los campos son opcionales:**
+```json
+{
+  "nombre": "Juan Carlos Pérez",           // OPCIONAL - Nuevo nombre
+  "telefono": "998877665",                 // OPCIONAL - Nuevo teléfono
+  "imagenPerfilUrl": "https://nueva.jpg"   // OPCIONAL - Nueva imagen de perfil
+}
+```
+
+**Campos que NO se pueden actualizar:**
+- ❌ `email` - Es el identificador único, no se puede cambiar
+- ❌ `password` - Requiere endpoint separado (si se implementa)
+- ❌ `fechaRegistro` - Se establece al crear la cuenta
+- ❌ `activo` - Solo administradores (si se implementa)
+
+**Respuesta Exitosa (200 OK):**
+```json
+{
+  "id": 1,
+  "nombre": "Juan Carlos Pérez",
+  "email": "juan@example.com",
+  "telefono": "998877665",
+  "imagenPerfilUrl": "https://nueva.jpg",
+  "fechaRegistro": "2025-12-14T10:30:00",
+  "activo": true
+}
+```
+
+**Ejemplo de Uso:**
+```bash
+# Actualizar solo el nombre
+curl -X PUT http://localhost:8080/api/usuarios/1 \
+  -H "Content-Type: application/json" \
+  -d '{ "nombre": "Juan Carlos Pérez" }'
+
+# Actualizar imagen de perfil
+curl -X PUT http://localhost:8080/api/usuarios/1 \
+  -H "Content-Type: application/json" \
+  -d '{ "imagenPerfilUrl": "https://cloudinary.com/nueva-foto.jpg" }'
+
+# Actualizar múltiples campos
+curl -X PUT http://localhost:8080/api/usuarios/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Juan Carlos Pérez",
+    "telefono": "998877665",
+    "imagenPerfilUrl": "https://nueva.jpg"
+  }'
+```
+
+---
+
+### 2. 📍 Direcciones
 
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
@@ -215,100 +461,836 @@ Response 200 OK:
 }
 ```
 
-### 5. Pedidos
+### 5. 📦 Pedidos
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| POST | `/api/pedidos` | Crear pedido |
-| GET | `/api/pedidos/usuario/{usuarioId}` | Historial de usuario |
-| GET | `/api/pedidos/{id}` | Detalle de pedido |
-| PUT | `/api/pedidos/{id}/estado?estado={EstadoPedido}` | Actualizar estado |
-| PUT | `/api/pedidos/{id}/cancelar` | Cancelar pedido |
-| GET | `/api/pedidos/estado/{estado}` | Filtrar por estado |
+El sistema de pedidos maneja todo el ciclo de vida de una orden, desde su creación hasta la entrega final. Incluye cálculo automático de costos, gestión de estados y personalización de productos.
 
-**Estados Posibles:**
-- `PENDIENTE_PAGO`
-- `CONFIRMADO_TIENDA`
-- `EN_PREPARACION`
-- `LISTO_PARA_RECOGER`
-- `EN_CAMINO`
-- `ENTREGADO`
-- `CANCELADO`
+#### Tabla de Endpoints
 
-**Ejemplo - Crear Pedido:**
+| Método | Endpoint | Descripción | Autenticación |
+|--------|----------|-------------|---------------|
+| POST | `/api/pedidos` | Crear nuevo pedido | Requerida |
+| GET | `/api/pedidos/usuario/{usuarioId}` | Historial de pedidos del usuario | Requerida |
+| GET | `/api/pedidos/{id}` | Obtener detalle completo de un pedido | Requerida |
+| PUT | `/api/pedidos/{id}/estado?estado={estado}` | Actualizar estado del pedido | Requerida |
+| PUT | `/api/pedidos/{id}/cancelar` | Cancelar pedido | Requerida |
+| GET | `/api/pedidos/estado/{estado}` | Filtrar pedidos por estado | Requerida |
+
+---
+
+#### 🔄 Flujo Completo de un Pedido
+
+```mermaid
+graph TD
+    A[Usuario selecciona productos] --> B[POST /api/pedidos]
+    B --> C[Pedido creado: PENDIENTE_PAGO]
+    C --> D[POST /api/pagos]
+    D --> E{Pago exitoso?}
+    E -->|Sí| F[CONFIRMADO_TIENDA]
+    E -->|No| C
+    F --> G[Restaurante acepta: EN_PREPARACION]
+    G --> H[LISTO_PARA_RECOGER]
+    H --> I[Repartidor recoge: EN_CAMINO]
+    I --> J[ENTREGADO]
+    C --> K[PUT /cancelar]
+    K --> L[CANCELADO]
+```
+
+---
+
+#### 📊 Estados del Pedido
+
+| Estado | Descripción | ¿Quién lo cambia? | Siguiente Estado Posible |
+|--------|-------------|-------------------|-------------------------|
+| `PENDIENTE_PAGO` | Pedido creado, esperando pago | Sistema (automático) | `CONFIRMADO_TIENDA` o `CANCELADO` |
+| `CONFIRMADO_TIENDA` | Pago confirmado, esperando preparación | Sistema (al confirmar pago) | `EN_PREPARACION` o `CANCELADO` |
+| `EN_PREPARACION` | Restaurante preparando el pedido | Restaurante | `LISTO_PARA_RECOGER` |
+| `LISTO_PARA_RECOGER` | Pedido listo para que repartidor recoja | Restaurante | `EN_CAMINO` |
+| `EN_CAMINO` | Repartidor en camino a dirección de entrega | Repartidor | `ENTREGADO` |
+| `ENTREGADO` | Pedido entregado al cliente | Repartidor | ❌ Estado final |
+| `CANCELADO` | Pedido cancelado por usuario o sistema | Usuario/Sistema | ❌ Estado final |
+
+**Reglas de Transición:**
+- ✅ Solo se puede cancelar en estados: `PENDIENTE_PAGO`, `CONFIRMADO_TIENDA`, `EN_PREPARACION`
+- ❌ NO se puede cancelar en estados: `LISTO_PARA_RECOGER`, `EN_CAMINO`, `ENTREGADO`
+- ✅ Los estados avanzan linealmente (no retroceden)
+
+---
+
+#### 📝 **POST** `/api/pedidos` - Crear Pedido
+
+Crea un nuevo pedido con productos y opciones personalizadas. El sistema calcula automáticamente todos los costos.
+
+**Headers:**
+```
+Content-Type: application/json
+```
+
+**Body (JSON):**
 ```json
+{
+  "usuarioId": 1,                    // REQUERIDO - ID del usuario que hace el pedido
+  "restauranteId": 1,                // REQUERIDO - ID del restaurante
+  "direccionEntregaId": 1,           // REQUERIDO - ID de la dirección de entrega
+  "notasInstrucciones": "Sin cebolla, extra salsa", // OPCIONAL - Instrucciones especiales
+  "detalles": [                      // REQUERIDO - Lista de productos
+    {
+      "productoId": 1,               // REQUERIDO - ID del producto
+      "cantidad": 2,                 // REQUERIDO - Cantidad (mínimo 1)
+      "opciones": [                  // OPCIONAL - Opciones de personalización
+        { "opcionId": 1 },           // ID de la opción seleccionada
+        { "opcionId": 5 }
+      ]
+    },
+    {
+      "productoId": 3,
+      "cantidad": 1,
+      "opciones": [
+        { "opcionId": 10 }
+      ]
+    }
+  ]
+}
+```
+
+**Validaciones:**
+- ✅ `usuarioId` debe existir en la base de datos
+- ✅ `restauranteId` debe existir y estar abierto (`estaAbierto: true`)
+- ✅ `direccionEntregaId` debe pertenecer al usuario
+- ✅ Todos los `productoId` deben existir y estar disponibles
+- ✅ Todas las `opcionId` deben existir
+- ✅ `cantidad` debe ser mayor a 0
+
+**Cálculos Automáticos:**
+
+El sistema calcula automáticamente:
+
+1. **Subtotal de Productos:**
+   ```
+   Producto 1: S/. 15.90 × 2 = S/. 31.80
+   + Opción 1 (extra queso): S/. 2.00 × 2 = S/. 4.00
+   + Opción 5 (bebida grande): S/. 1.50 × 2 = S/. 3.00
+   
+   Producto 3: S/. 8.90 × 1 = S/. 8.90
+   + Opción 10 (salsa picante): S/. 0.00
+   
+   SUBTOTAL = S/. 47.70
+   ```
+
+2. **Costo de Envío:**
+   ```
+   Basado en restaurante.costoEnvioBase
+   Ejemplo: S/. 5.00
+   ```
+
+3. **Impuestos (18% IGV):**
+   ```
+   (Subtotal + Costo Envío) × 0.18
+   (47.70 + 5.00) × 0.18 = S/. 9.49
+   ```
+
+4. **Total Final:**
+   ```
+   Subtotal + Costo Envío + Impuestos
+   47.70 + 5.00 + 9.49 = S/. 62.19
+   ```
+
+**Respuesta Exitosa (201 Created):**
+```json
+{
+  "id": 1,
+  "usuarioId": 1,
+  "restauranteId": 1,
+  "direccionEntregaId": 1,
+  "subtotalProductos": 47.70,
+  "costoEnvio": 5.00,
+  "impuestos": 9.49,
+  "totalFinal": 62.19,
+  "estado": "PENDIENTE_PAGO",
+  "notasInstrucciones": "Sin cebolla, extra salsa",
+  "fechaCreacion": "2025-12-14T16:00:00",
+  "fechaActualizacion": "2025-12-14T16:00:00",
+  "detalles": [
+    {
+      "id": 1,
+      "productoId": 1,
+      "nombreProducto": "Whopper",
+      "cantidad": 2,
+      "precioUnitario": 15.90,
+      "opciones": [
+        {
+          "id": 1,
+          "opcionId": 1,
+          "nombreOpcion": "Extra queso",
+          "precioExtraCobrado": 2.00
+        },
+        {
+          "id": 2,
+          "opcionId": 5,
+          "nombreOpcion": "Bebida grande",
+          "precioExtraCobrado": 1.50
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "productoId": 3,
+      "nombreProducto": "Papas fritas",
+      "cantidad": 1,
+      "precioUnitario": 8.90,
+      "opciones": [
+        {
+          "id": 3,
+          "opcionId": 10,
+          "nombreOpcion": "Salsa picante",
+          "precioExtraCobrado": 0.00
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Respuestas de Error:**
+
+| Código | Descripción | Ejemplo |
+|--------|-------------|---------|
+| 400 Bad Request | Usuario no encontrado | `{ "message": "Usuario no encontrado" }` |
+| 400 Bad Request | Restaurante cerrado | `{ "message": "Restaurante no disponible" }` |
+| 400 Bad Request | Dirección no pertenece al usuario | `{ "message": "Dirección inválida" }` |
+| 400 Bad Request | Producto no disponible | `{ "message": "Producto no disponible" }` |
+
+**Ejemplo de Uso (cURL):**
+```bash
+curl -X POST http://localhost:8080/api/pedidos \
+  -H "Content-Type: application/json" \
+  -d '{
+    "usuarioId": 1,
+    "restauranteId": 1,
+    "direccionEntregaId": 1,
+    "notasInstrucciones": "Sin cebolla",
+    "detalles": [
+      {
+        "productoId": 1,
+        "cantidad": 2,
+        "opciones": [
+          { "opcionId": 1 },
+          { "opcionId": 5 }
+        ]
+      }
+    ]
+  }'
+```
+
+---
+
+#### 📋 **GET** `/api/pedidos/usuario/{usuarioId}` - Historial de Pedidos
+
+Obtiene todos los pedidos realizados por un usuario, ordenados del más reciente al más antiguo.
+
+**Path Parameters:**
+- `usuarioId` (Long) - ID del usuario
+
+**Respuesta Exitosa (200 OK):**
+```json
+[
+  {
+    "id": 3,
+    "restauranteId": 2,
+    "nombreRestaurante": "KFC",
+    "subtotalProductos": 35.00,
+    "costoEnvio": 5.00,
+    "impuestos": 7.20,
+    "totalFinal": 47.20,
+    "estado": "ENTREGADO",
+    "fechaCreacion": "2025-12-14T15:00:00",
+    "fechaActualizacion": "2025-12-14T16:30:00"
+  },
+  {
+    "id": 2,
+    "restauranteId": 1,
+    "nombreRestaurante": "Burger King",
+    "subtotalProductos": 28.50,
+    "costoEnvio": 5.00,
+    "impuestos": 6.03,
+    "totalFinal": 39.53,
+    "estado": "EN_CAMINO",
+    "fechaCreacion": "2025-12-14T14:00:00",
+    "fechaActualizacion": "2025-12-14T15:45:00"
+  },
+  {
+    "id": 1,
+    "restauranteId": 1,
+    "nombreRestaurante": "Burger King",
+    "subtotalProductos": 47.70,
+    "costoEnvio": 5.00,
+    "impuestos": 9.49,
+    "totalFinal": 62.19,
+    "estado": "CANCELADO",
+    "fechaCreacion": "2025-12-14T13:00:00",
+    "fechaActualizacion": "2025-12-14T13:15:00"
+  }
+]
+```
+
+**Filtrado por Estado (Opcional):**
+```
+GET /api/pedidos/usuario/1?estado=ENTREGADO
+```
+
+---
+
+#### 🔍 **GET** `/api/pedidos/{id}` - Detalle Completo del Pedido
+
+Obtiene toda la información detallada de un pedido, incluyendo productos, opciones y costos.
+
+**Path Parameters:**
+- `id` (Long) - ID del pedido
+
+**Respuesta Exitosa (200 OK):**
+```json
+{
+  "id": 1,
+  "usuarioId": 1,
+  "nombreUsuario": "Juan Pérez",
+  "restauranteId": 1,
+  "nombreRestaurante": "Burger King",
+  "direccionEntregaId": 1,
+  "direccionCompleta": "Av. Los Héroes 123, San Isidro",
+  "subtotalProductos": 47.70,
+  "costoEnvio": 5.00,
+  "impuestos": 9.49,
+  "totalFinal": 62.19,
+  "estado": "CONFIRMADO_TIENDA",
+  "notasInstrucciones": "Sin cebolla, extra salsa",
+  "fechaCreacion": "2025-12-14T16:00:00",
+  "fechaActualizacion": "2025-12-14T16:05:00",
+  "detalles": [
+    {
+      "id": 1,
+      "productoId": 1,
+      "nombreProducto": "Whopper",
+      "cantidad": 2,
+      "precioUnitario": 15.90,
+      "subtotalItem": 38.80,
+      "opciones": [
+        {
+          "id": 1,
+          "opcionId": 1,
+          "nombreOpcion": "Extra queso",
+          "precioExtraCobrado": 2.00
+        },
+        {
+          "id": 2,
+          "opcionId": 5,
+          "nombreOpcion": "Bebida grande",
+          "precioExtraCobrado": 1.50
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "productoId": 3,
+      "nombreProducto": "Papas fritas",
+      "cantidad": 1,
+      "precioUnitario": 8.90,
+      "subtotalItem": 8.90,
+      "opciones": [
+        {
+          "id": 3,
+          "opcionId": 10,
+          "nombreOpcion": "Salsa picante",
+          "precioExtraCobrado": 0.00
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Cálculo del subtotalItem:**
+```
+Whopper:
+- Precio base: S/. 15.90
+- Extra queso: S/. 2.00
+- Bebida grande: S/. 1.50
+- Subtotal por unidad: S/. 19.40
+- Cantidad: 2
+- SUBTOTAL ITEM: S/. 38.80
+
+Papas fritas:
+- Precio base: S/. 8.90
+- Salsa picante: S/. 0.00
+- Cantidad: 1
+- SUBTOTAL ITEM: S/. 8.90
+```
+
+---
+
+#### ✏️ **PUT** `/api/pedidos/{id}/estado` - Actualizar Estado
+
+Actualiza el estado de un pedido. Solo permite transiciones válidas según el flujo.
+
+**Path Parameters:**
+- `id` (Long) - ID del pedido
+
+**Query Parameters:**
+- `estado` (String) - Nuevo estado del pedido
+
+**Estados Válidos:**
+```
+PENDIENTE_PAGO
+CONFIRMADO_TIENDA
+EN_PREPARACION
+LISTO_PARA_RECOGER
+EN_CAMINO
+ENTREGADO
+CANCELADO
+```
+
+**Ejemplos:**
+```
+PUT /api/pedidos/1/estado?estado=EN_PREPARACION
+PUT /api/pedidos/1/estado?estado=LISTO_PARA_RECOGER
+PUT /api/pedidos/1/estado?estado=EN_CAMINO
+PUT /api/pedidos/1/estado?estado=ENTREGADO
+```
+
+**Respuesta Exitosa (200 OK):**
+```json
+{
+  "id": 1,
+  "estado": "EN_PREPARACION",
+  "fechaActualizacion": "2025-12-14T16:10:00"
+}
+```
+
+**Respuestas de Error:**
+
+| Código | Descripción |
+|--------|-------------|
+| 400 Bad Request | Transición de estado inválida |
+| 404 Not Found | Pedido no encontrado |
+
+---
+
+#### ❌ **PUT** `/api/pedidos/{id}/cancelar` - Cancelar Pedido
+
+Cancela un pedido. Solo se puede cancelar en estados tempranos.
+
+**Path Parameters:**
+- `id` (Long) - ID del pedido a cancelar
+
+**Estados en los que se puede cancelar:**
+- ✅ `PENDIENTE_PAGO`
+- ✅ `CONFIRMADO_TIENDA`
+- ✅ `EN_PREPARACION`
+- ❌ `LISTO_PARA_RECOGER` (ya no se puede cancelar)
+- ❌ `EN_CAMINO` (ya no se puede cancelar)
+- ❌ `ENTREGADO` (estado final)
+
+**Respuesta Exitosa (200 OK):**
+```json
+{
+  "id": 1,
+  "estado": "CANCELADO",
+  "fechaActualizacion": "2025-12-14T16:15:00",
+  "message": "Pedido cancelado exitosamente"
+}
+```
+
+**Respuestas de Error:**
+
+| Código | Descripción | Ejemplo |
+|--------|-------------|---------|
+| 400 Bad Request | No se puede cancelar en este estado | `{ "message": "No se puede cancelar un pedido en estado EN_CAMINO" }` |
+| 404 Not Found | Pedido no encontrado | `{ "message": "Pedido no encontrado" }` |
+
+---
+
+#### 🔍 **GET** `/api/pedidos/estado/{estado}` - Filtrar por Estado
+
+Obtiene todos los pedidos con un estado específico.
+
+**Path Parameters:**
+- `estado` (String) - Estado a filtrar
+
+**Ejemplo:**
+```
+GET /api/pedidos/estado/EN_PREPARACION
+GET /api/pedidos/estado/EN_CAMINO
+GET /api/pedidos/estado/ENTREGADO
+```
+
+**Respuesta Exitosa (200 OK):**
+```json
+[
+  {
+    "id": 5,
+    "usuarioId": 2,
+    "restauranteId": 3,
+    "totalFinal": 55.00,
+    "estado": "EN_PREPARACION",
+    "fechaCreacion": "2025-12-14T16:20:00"
+  },
+  {
+    "id": 7,
+    "usuarioId": 4,
+    "restauranteId": 1,
+    "totalFinal": 42.50,
+    "estado": "EN_PREPARACION",
+    "fechaCreacion": "2025-12-14T16:25:00"
+  }
+]
+```
+
+---
+
+#### 🔄 Flujo Completo de Ejemplo
+
+**Escenario:** Usuario hace un pedido, paga y recibe su comida.
+
+```bash
+# 1. Usuario crea el pedido
 POST /api/pedidos
 {
   "usuarioId": 1,
   "restauranteId": 1,
   "direccionEntregaId": 1,
-  "notasInstrucciones": "Sin cebolla",
   "detalles": [
     {
       "productoId": 1,
       "cantidad": 2,
-      "opciones": [
-        { "opcionId": 1 },
-        { "opcionId": 5 }
-      ]
+      "opciones": [{ "opcionId": 1 }]
     }
   ]
 }
+# Response: { "id": 1, "estado": "PENDIENTE_PAGO", "totalFinal": 50.00 }
 
-Response 201 Created:
-{
-  "id": 1,
-  "subtotalProductos": 31.80,
-  "costoEnvio": 5.00,
-  "impuestos": 5.72,
-  "totalFinal": 42.52,
-  "estado": "PENDIENTE_PAGO",
-  "fechaCreacion": "2025-01-14T11:00:00"
-}
-```
-
-### 6. Pagos
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| POST | `/api/pagos` | Crear pago |
-| POST | `/api/pagos/{id}/confirmar` | Confirmar pago |
-| POST | `/api/pagos/{id}/marcar-fallido` | Marcar como fallido |
-| GET | `/api/pagos/pedido/{pedidoId}` | Obtener pago de pedido |
-| GET | `/api/pagos/{id}/client-secret` | Client secret para Stripe |
-| POST | `/api/pagos/webhook/stripe` | Webhook de Stripe |
-
-**Métodos de Pago:**
-- `TARJETA_CREDITO`
-- `TARJETA_DEBITO`
-- `YAPE`
-- `EFECTIVO`
-
-**Estados de Pago:**
-- `PENDIENTE`
-- `COMPLETADO`
-- `FALLIDO`
-- `REEMBOLSADO`
-
-**Ejemplo - Crear Pago con Tarjeta:**
-```json
+# 2. Usuario realiza el pago
 POST /api/pagos
 {
   "pedidoId": 1,
-  "monto": 42.52,
+  "monto": 50.00,
   "metodo": "TARJETA_CREDITO"
 }
+# Response: { "id": 1, "estado": "PENDIENTE" }
 
-Response 201 Created:
+# 3. Usuario confirma el pago (si payment.auto.approve=false)
+POST /api/pagos/1/confirmar
+# Response: { "id": 1, "estado": "COMPLETADO" }
+# El pedido cambia automáticamente a: "CONFIRMADO_TIENDA"
+
+# 4. Restaurante acepta y empieza a preparar
+PUT /api/pedidos/1/estado?estado=EN_PREPARACION
+# Response: { "id": 1, "estado": "EN_PREPARACION" }
+
+# 5. Comida lista para recoger
+PUT /api/pedidos/1/estado?estado=LISTO_PARA_RECOGER
+# Response: { "id": 1, "estado": "LISTO_PARA_RECOGER" }
+
+# 6. Repartidor recoge y sale a entregar
+PUT /api/pedidos/1/estado?estado=EN_CAMINO
+# Response: { "id": 1, "estado": "EN_CAMINO" }
+
+# 7. Pedido entregado
+PUT /api/pedidos/1/estado?estado=ENTREGADO
+# Response: { "id": 1, "estado": "ENTREGADO" }
+
+# 8. Usuario verifica su pedido
+GET /api/pedidos/1
+# Response: { "id": 1, "estado": "ENTREGADO", "totalFinal": 50.00 }
+```
+
+---
+
+#### 💡 Notas Importantes
+
+**Sobre Opciones de Productos:**
+- Las opciones son configuradas por producto en `GrupoOpciones`
+- Cada grupo puede tener `seleccionMinima` y `seleccionMaxima`
+- El precio extra de cada opción se suma al precio del producto
+- Las opciones se almacenan en `OpcionDetallePedido` con el precio al momento del pedido
+
+**Sobre Cálculos:**
+- Los cálculos se hacen al momento de crear el pedido
+- Los precios se congelan (no cambian si el producto cambia de precio después)
+- El costo de envío viene de `restaurante.costoEnvioBase`
+- Los impuestos se calculan como 18% del (subtotal + envío)
+
+**Sobre Estados:**
+- Los estados NO retroceden (solo avanzan o cancelan)
+- `PENDIENTE_PAGO` es el estado inicial de todo pedido nuevo
+- `CONFIRMADO_TIENDA` se asigna automáticamente al confirmar el pago
+- Los demás estados los actualiza el restaurante/repartidor manualmente
+
+**Sobre Cancelación:**
+- Solo el usuario puede cancelar su propio pedido
+- No se puede cancelar si el pedido ya está `EN_CAMINO` o `ENTREGADO`
+- Al cancelar, NO se procesa reembolso automático (esto es manual)
+
+---
+
+### 6. 💳 Pagos Simulados
+
+
+**⚠️ IMPORTANTE:** El sistema de pagos es completamente simulado y NO requiere integración con Stripe. Todos los pagos se procesan internamente de forma ficticia.
+
+#### Tabla de Endpoints
+
+| Método | Endpoint | Descripción | Autenticación |
+|--------|----------|-------------|---------------|
+| POST | `/api/pagos` | Crear pago simulado | Requerida |
+| POST | `/api/pagos/{id}/confirmar` | Confirmar pago manualmente | Requerida |
+| POST | `/api/pagos/{id}/marcar-fallido` | Marcar pago como fallido | Requerida |
+| GET | `/api/pagos/pedido/{pedidoId}` | Obtener pago de un pedido | Requerida |
+| GET | `/api/pagos/{id}` | Obtener pago por ID | Requerida |
+
+---
+
+#### 📝 **POST** `/api/pagos` - Crear Pago Simulado
+
+Crea un pago simulado para un pedido. Genera automáticamente una referencia ficticia.
+
+**Headers:**
+```
+Content-Type: application/json
+```
+
+**Body (JSON):**
+```json
+{
+  "pedidoId": 1,           // REQUERIDO - ID del pedido a pagar
+  "monto": 50.00,          // REQUERIDO - Monto total a pagar
+  "metodo": "TARJETA_CREDITO"  // REQUERIDO - Ver métodos disponibles abajo
+}
+```
+
+**Métodos de Pago Disponibles:**
+- `TARJETA_CREDITO` - Tarjeta de crédito simulada
+- `TARJETA_DEBITO` - Tarjeta de débito simulada
+- `YAPE` - Pago con Yape simulado
+- `EFECTIVO` - Pago en efectivo (contra entrega)
+
+**Respuesta Exitosa (201 Created) - Confirmación Manual:**
+```json
 {
   "id": 1,
   "pedidoId": 1,
-  "monto": 42.52,
+  "monto": 50.00,
   "metodo": "TARJETA_CREDITO",
   "estado": "PENDIENTE",
-  "referenciaPasarela": "pi_3xxxxxxx"
+  "referenciaPasarela": "SIM-TC-1702564321-A3F9",
+  "fechaPago": null
 }
 ```
+
+**Respuesta Exitosa (201 Created) - Auto-aprobación Activada:**
+```json
+{
+  "id": 1,
+  "pedidoId": 1,
+  "monto": 50.00,
+  "metodo": "TARJETA_CREDITO",
+  "estado": "COMPLETADO",
+  "referenciaPasarela": "SIM-TC-1702564321-A3F9",
+  "fechaPago": "2025-12-14T15:30:45"
+}
+```
+
+**Formato de Referencia:**
+```
+SIM-{PREFIJO}-{TIMESTAMP}-{CODIGO_ALEATORIO}
+```
+
+**Prefijos por método:**
+- `TC` - Tarjeta de crédito
+- `TD` - Tarjeta de débito
+- `YAPE` - Yape
+- `EFEC` - Efectivo
+
+**Respuestas de Error:**
+
+| Código | Descripción |
+|--------|-------------|
+| 400 Bad Request | El pedido ya tiene un pago asociado |
+| 404 Not Found | Pedido no encontrado |
+
+---
+
+#### ✅ **POST** `/api/pagos/{id}/confirmar` - Confirmar Pago
+
+Confirma un pago pendiente de forma manual. Actualiza el estado del pago a `COMPLETADO` y el estado del pedido a `CONFIRMADO_TIENDA`.
+
+**Path Parameters:**
+- `id` (Long) - ID del pago a confirmar
+
+**Respuesta Exitosa (200 OK):**
+```json
+{
+  "id": 1,
+  "pedidoId": 1,
+  "monto": 50.00,
+  "metodo": "TARJETA_CREDITO",
+  "estado": "COMPLETADO",
+  "referenciaPasarela": "SIM-TC-1702564321-A3F9",
+  "fechaPago": "2025-12-14T15:35:12"
+}
+```
+
+**Respuestas de Error:**
+
+| Código | Descripción |
+|--------|-------------|
+| 400 Bad Request | El pago ya fue completado |
+| 404 Not Found | Pago no encontrado |
+
+---
+
+#### ❌ **POST** `/api/pagos/{id}/marcar-fallido` - Marcar como Fallido
+
+Marca un pago como fallido, simulando el rechazo del pago.
+
+**Path Parameters:**
+- `id` (Long) - ID del pago a marcar como fallido
+
+**Respuesta Exitosa (200 OK):**
+```json
+{
+  "id": 1,
+  "pedidoId": 1,
+  "monto": 50.00,
+  "metodo": "TARJETA_CREDITO",
+  "estado": "FALLIDO",
+  "referenciaPasarela": "SIM-TC-1702564321-A3F9",
+  "fechaPago": null
+}
+```
+
+---
+
+#### 🔍 **GET** `/api/pagos/pedido/{pedidoId}` - Obtener Pago por Pedido
+
+Obtiene el pago asociado a un pedido específico.
+
+**Path Parameters:**
+- `pedidoId` (Long) - ID del pedido
+
+**Respuesta Exitosa (200 OK):**
+```json
+{
+  "id": 1,
+  "pedidoId": 1,
+  "monto": 50.00,
+  "metodo": "YAPE",
+  "estado": "COMPLETADO",
+  "referenciaPasarela": "SIM-YAPE-1702564325-C8D3",
+  "fechaPago": "2025-12-14T15:30:45"
+}
+```
+
+**Respuestas de Error:**
+
+| Código | Descripción |
+|--------|-------------|
+| 404 Not Found | No se encontró pago para este pedido |
+
+---
+
+#### 🔍 **GET** `/api/pagos/{id}` - Obtener Pago por ID
+
+Obtiene un pago específico por su ID.
+
+**Path Parameters:**
+- `id` (Long) - ID del pago
+
+**Respuesta Exitosa (200 OK):**
+```json
+{
+  "id": 1,
+  "pedidoId": 1,
+  "monto": 50.00,
+  "metodo": "EFECTIVO",
+  "estado": "PENDIENTE",
+  "referenciaPasarela": "SIM-EFEC-1702564326-E9F1",
+  "fechaPago": null
+}
+```
+
+---
+
+#### 📊 Estados de Pago
+
+| Estado | Descripción | Es Final |
+|--------|-------------|----------|
+| `PENDIENTE` | Pago creado, esperando confirmación | ❌ |
+| `COMPLETADO` | Pago confirmado exitosamente | ✅ |
+| `FALLIDO` | Pago rechazado o fallido | ✅ |
+
+---
+
+#### ⚙️ Configuración de Auto-aprobación
+
+El sistema soporta dos modos de operación:
+
+**Modo Manual (por defecto):**
+```properties
+payment.auto.approve=false
+```
+- Los pagos se crean con estado `PENDIENTE`
+- Requieren confirmación manual con `/confirmar`
+
+**Modo Auto-aprobación:**
+```properties
+payment.auto.approve=true
+```
+- Los pagos se crean con estado `COMPLETADO`
+- No requieren confirmación manual
+- El pedido pasa automáticamente a `CONFIRMADO_TIENDA`
+
+**Configurar en Railway/Azure:**
+```bash
+PAYMENT_AUTO_APPROVE=true
+```
+
+---
+
+#### 📝 Ejemplo Completo de Flujo de Pago
+
+```bash
+# 1. Crear pedido
+POST /api/pedidos
+{
+  "usuarioId": 1,
+  "restauranteId": 1,
+  "direccionEntregaId": 1,
+  "detalles": [...]
+}
+# Response: { "id": 1, "totalFinal": 50.00 }
+
+# 2. Crear pago para el pedido
+POST /api/pagos
+{
+  "pedidoId": 1,
+  "monto": 50.00,
+  "metodo": "TARJETA_CREDITO"
+}
+# Response: { "id": 1, "estado": "PENDIENTE", "referenciaPasarela": "SIM-TC-..." }
+
+# 3. Confirmar pago (solo si payment.auto.approve=false)
+POST /api/pagos/1/confirmar
+# Response: { "id": 1, "estado": "COMPLETADO", "fechaPago": "2025-12-14T15:35:12" }
+
+# 4. Verificar estado del pedido
+GET /api/pedidos/1
+# Response: { "id": 1, "estado": "CONFIRMADO_TIENDA" }
+```
+
+---
+
+**📖 Para más detalles, ver:** [`SISTEMA_PAGOS_SIMULADOS.md`](./SISTEMA_PAGOS_SIMULADOS.md)
+
+---
 
 ## Códigos de Respuesta HTTP
 
