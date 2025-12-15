@@ -194,48 +194,10 @@ Entidades principales:
 - **[ENVIRONMENT_VARIABLES.md](ENVIRONMENT_VARIABLES.md)** - Variables de entorno
 - **[HELP.md](HELP.md)** - Guía de Spring Boot
 
-## 🔧 Solución de Problemas
-
-### Error de conexión a MySQL
-- Verificar que las variables de entorno estén configuradas
-- Usar la URL pública si estás fuera de Railway
-- Verificar firewall/reglas de red
-
-### Tests fallando
-- Los tests usan H2, no requieren MySQL
-- Verificar que H2 esté en el `pom.xml`
-- Ejecutar con `-DskipTests` si es necesario
-
-### Build en GitHub Actions falla
-- El workflow está configurado para ignorar fallos de tests
-- Verifica las variables de entorno en GitHub Secrets
-
-## 🤝 Contribución
-
-1. Fork el proyecto
-2. Crea tu rama (`git checkout -b feature/NuevaCaracteristica`)
-3. Commit cambios (`git commit -m 'Add: Nueva característica'`)
-4. Push (`git push origin feature/NuevaCaracteristica`)
-5. Abre un Pull Request
-
-## 📄 Licencia
-
-MIT License - ver [LICENSE](LICENSE)
 
 ## 👥 Autor
 
 **PieroH-del** - [GitHub](https://github.com/PieroH-del)
+**IsmaGal** - [GitHub](https://github.com/IsmaGal)
 
-## 🙏 Agradecimientos
-
-- Spring Boot Team
-- MapStruct
-- Stripe
-- Railway (Hosting MySQL)
-
----
-
-⭐ **Si te fue útil, dale una estrella en GitHub!**
-
-📧 Soporte: [GitHub Issues](https://github.com/PieroH-del/chaski-backend/issues)
 
