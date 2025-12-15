@@ -88,6 +88,21 @@ public class RestauranteService {
         existente.setTiempoEsperaMinutos(dto.getTiempoEsperaMinutos());
         existente.setCostoEnvioBase(dto.getCostoEnvioBase());
 
+        // Actualizar categorías si se proporcionan
+        if (dto.getCategorias() != null && !dto.getCategorias().isEmpty()) {
+            List<Long> categoriaIds = dto.getCategorias().stream()
+                    .map(categoriaDTO -> categoriaDTO.getId())
+                    .collect(Collectors.toList());
+
+            List<Categoria> categoriasExistentes = categoriaRepository.findAllById(categoriaIds);
+
+            if (categoriasExistentes.size() != categoriaIds.size()) {
+                throw new IllegalArgumentException("Una o más categorías no existen");
+            }
+
+            existente.setCategorias(categoriasExistentes);
+        }
+
         Restaurante guardado = restauranteRepository.save(existente);
         return restauranteMapper.toDto(guardado);
     }

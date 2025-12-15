@@ -163,6 +163,14 @@ public class PedidoService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public void eliminar(Long id) {
+        if (!pedidoRepository.existsById(id)) {
+            throw new IllegalArgumentException("Pedido no encontrado");
+        }
+        pedidoRepository.deleteById(id);
+    }
+
     private void validarTransicionEstado(EstadoPedido estadoActual, EstadoPedido nuevoEstado) {
         // Validación básica de flujo de estados
         if (estadoActual == EstadoPedido.CANCELADO || estadoActual == EstadoPedido.ENTREGADO) {

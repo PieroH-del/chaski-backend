@@ -64,5 +64,23 @@ public class PagoController {
         PagoDTO pago = pagoService.obtenerPorId(id);
         return ResponseEntity.ok(pago);
     }
+
+    /**
+     * Actualiza un pago.
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<PagoDTO> actualizar(@PathVariable Long id, @Valid @RequestBody CrearPagoDTO dto) {
+        PagoDTO pago = pagoService.actualizar(id, dto);
+        return ResponseEntity.ok(pago);
+    }
+
+    /**
+     * Elimina un pago del sistema.
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        pagoService.eliminar(id);
+        return ResponseEntity.noContent().build();
+    }
 }
 

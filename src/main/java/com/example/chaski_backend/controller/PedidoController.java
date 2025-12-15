@@ -56,5 +56,11 @@ public class PedidoController {
         List<PedidoDTO> pedidos = pedidoService.obtenerPorEstado(estado);
         return ResponseEntity.ok(pedidos);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        pedidoService.eliminar(id);
+        return ResponseEntity.noContent().build();
+    }
 }
 

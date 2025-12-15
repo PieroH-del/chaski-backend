@@ -420,6 +420,9 @@ Las categorías son utilizadas para clasificar los restaurantes.
 |--------|----------|-------------|---------------|
 | GET | `/api/categorias` | Listar todas las categorías | No requerida |
 | GET | `/api/categorias/{id}` | Obtener categoría por ID | No requerida |
+| POST | `/api/categorias` | Crear nueva categoría | Requerida |
+| PUT | `/api/categorias/{id}` | Actualizar categoría | Requerida |
+| DELETE | `/api/categorias/{id}` | Eliminar categoría | Requerida |
 
 ---
 
@@ -499,6 +502,144 @@ curl -X GET http://localhost:8080/api/categorias/1
 
 ---
 
+#### ➕ **POST** `/api/categorias` - Crear Nueva Categoría
+
+Crea una nueva categoría en el sistema.
+
+**Headers:**
+```
+Content-Type: application/json
+```
+
+**Body (JSON):**
+```json
+{
+  "nombre": "Comida Italiana",                    // REQUERIDO - Nombre de la categoría
+  "imagenUrl": "https://example.com/italiana.jpg" // OPCIONAL - URL de la imagen
+}
+```
+
+**Validaciones:**
+- ✅ `nombre` es requerido y debe ser único
+- ✅ `imagenUrl` es opcional pero debe ser una URL válida si se proporciona
+
+**Respuesta Exitosa (201 Created):**
+```json
+{
+  "id": 7,
+  "nombre": "Comida Italiana",
+  "imagenUrl": "https://example.com/italiana.jpg"
+}
+```
+
+**Respuestas de Error:**
+
+| Código | Descripción | Ejemplo |
+|--------|-------------|---------|
+| 400 Bad Request | Datos inválidos | `{ "message": "El campo 'nombre' es requerido" }` |
+| 400 Bad Request | Nombre duplicado | `{ "message": "Ya existe una categoría con ese nombre" }` |
+
+**Ejemplo de Uso (cURL):**
+```bash
+curl -X POST http://localhost:8080/api/categorias \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Comida Italiana",
+    "imagenUrl": "https://example.com/italiana.jpg"
+  }'
+```
+
+**Ejemplo de Uso (PowerShell):**
+```powershell
+$body = @{
+    nombre = "Comida Italiana"
+    imagenUrl = "https://example.com/italiana.jpg"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://localhost:8080/api/categorias" `
+    -Method POST -Body $body -ContentType "application/json"
+```
+
+---
+
+#### ✏️ **PUT** `/api/categorias/{id}` - Actualizar Categoría
+
+Actualiza una categoría existente.
+
+**Path Parameters:**
+- `id` (Long) - ID de la categoría a actualizar
+
+**Headers:**
+```
+Content-Type: application/json
+```
+
+**Body (JSON):**
+```json
+{
+  "nombre": "Comida Italiana Premium",
+  "imagenUrl": "https://example.com/italiana-premium.jpg"
+}
+```
+
+**Respuesta Exitosa (200 OK):**
+```json
+{
+  "id": 7,
+  "nombre": "Comida Italiana Premium",
+  "imagenUrl": "https://example.com/italiana-premium.jpg"
+}
+```
+
+**Respuestas de Error:**
+
+| Código | Descripción |
+|--------|-------------|
+| 404 Not Found | Categoría no encontrada |
+| 400 Bad Request | Datos inválidos |
+
+**Ejemplo de Uso:**
+```bash
+curl -X PUT http://localhost:8080/api/categorias/7 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Comida Italiana Premium",
+    "imagenUrl": "https://example.com/italiana-premium.jpg"
+  }'
+```
+
+---
+
+#### 🗑️ **DELETE** `/api/categorias/{id}` - Eliminar Categoría
+
+Elimina una categoría del sistema.
+
+**Path Parameters:**
+- `id` (Long) - ID de la categoría a eliminar
+
+**Respuesta Exitosa (204 No Content):**
+```
+(Sin contenido en el cuerpo de la respuesta)
+```
+
+**Respuestas de Error:**
+
+| Código | Descripción |
+|--------|-------------|
+| 404 Not Found | Categoría no encontrada |
+| 400 Bad Request | No se puede eliminar una categoría que tiene restaurantes asociados |
+
+**Ejemplo de Uso:**
+```bash
+curl -X DELETE http://localhost:8080/api/categorias/7
+```
+
+**⚠️ Nota Importante:**
+- Si intentas eliminar una categoría que tiene restaurantes asociados, puede fallar debido a restricciones de integridad referencial.
+- Es recomendable verificar que no haya restaurantes usando la categoría antes de eliminarla.
+
+---
+
 ### 4. 🍽️ Restaurantes
 
 #### Tabla de Endpoints
@@ -511,6 +652,8 @@ curl -X GET http://localhost:8080/api/categorias/1
 | GET | `/api/restaurantes/buscar?nombre={nombre}` | Buscar por nombre | No requerida |
 | GET | `/api/restaurantes/filtrar/disponibilidad?estaAbierto={bool}` | Filtrar por apertura | No requerida |
 | GET | `/api/restaurantes/filtrar/categoria/{categoriaId}` | Filtrar por categoría | No requerida |
+| PUT | `/api/restaurantes/{id}` | Actualizar restaurante | Requerida |
+| DELETE | `/api/restaurantes/{id}` | Eliminar restaurante | Requerida |
 
 ---
 
@@ -790,6 +933,163 @@ Obtiene todos los restaurantes que pertenecen a una categoría específica.
 ```bash
 # Obtener todos los restaurantes de categoría "Hamburguesas" (id=1)
 curl -X GET http://localhost:8080/api/restaurantes/filtrar/categoria/1
+```
+
+---
+
+#### ✏️ **PUT** `/api/restaurantes/{id}` - Actualizar Restaurante
+
+Actualiza la información de un restaurante existente. Permite actualizar todos los campos incluyendo las categorías asociadas.
+
+**Path Parameters:**
+- `id` (Long) - ID del restaurante a actualizar
+
+**Headers:**
+```
+Content-Type: application/json
+```
+
+**Body (JSON):**
+```json
+{
+  "nombre": "Burger King Premium",
+  "descripcion": "Las mejores hamburguesas gourmet a la parrilla",
+  "imagenLogoUrl": "https://example.com/logo-updated.jpg",
+  "imagenPortadaUrl": "https://example.com/banner-updated.jpg",
+  "direccion": "Av. Javier Prado 123, San Isidro",
+  "calificacionPromedio": 4.7,
+  "estaAbierto": true,
+  "tiempoEsperaMinutos": 25,
+  "costoEnvioBase": 4.50,
+  "categorias": [
+    { "id": 1 }
+  ]
+}
+```
+
+**Validaciones:**
+- ✅ Restaurante debe existir (404 si no existe)
+- ✅ `nombre` debe ser único (excepto el actual)
+- ✅ Todos los campos del body son requeridos
+- ✅ Las categorías deben existir en la BD
+
+**Respuesta Exitosa (200 OK):**
+```json
+{
+  "id": 1,
+  "nombre": "Burger King Premium",
+  "descripcion": "Las mejores hamburguesas gourmet a la parrilla",
+  "imagenLogoUrl": "https://example.com/logo-updated.jpg",
+  "imagenPortadaUrl": "https://example.com/banner-updated.jpg",
+  "direccion": "Av. Javier Prado 123, San Isidro",
+  "calificacionPromedio": 4.7,
+  "estaAbierto": true,
+  "tiempoEsperaMinutos": 25,
+  "costoEnvioBase": 4.50,
+  "categorias": [
+    {
+      "id": 1,
+      "nombre": "Hamburguesas",
+      "imagenUrl": "https://example.com/categorias/hamburguesas.jpg"
+    }
+  ]
+}
+```
+
+**Respuestas de Error:**
+
+| Código | Descripción |
+|--------|-------------|
+| 404 Not Found | Restaurante no encontrado |
+| 400 Bad Request | Datos inválidos o categorías no existen |
+
+**Ejemplo de Uso (cURL):**
+```bash
+curl -X PUT http://localhost:8080/api/restaurantes/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Burger King Premium",
+    "descripcion": "Las mejores hamburguesas gourmet a la parrilla",
+    "imagenLogoUrl": "https://example.com/logo-updated.jpg",
+    "imagenPortadaUrl": "https://example.com/banner-updated.jpg",
+    "direccion": "Av. Javier Prado 123, San Isidro",
+    "calificacionPromedio": 4.7,
+    "estaAbierto": true,
+    "tiempoEsperaMinutos": 25,
+    "costoEnvioBase": 4.50,
+    "categorias": [{ "id": 1 }]
+  }'
+```
+
+**Ejemplo de Uso (PowerShell):**
+```powershell
+$body = @{
+    nombre = "Burger King Premium"
+    descripcion = "Las mejores hamburguesas gourmet a la parrilla"
+    imagenLogoUrl = "https://example.com/logo-updated.jpg"
+    imagenPortadaUrl = "https://example.com/banner-updated.jpg"
+    direccion = "Av. Javier Prado 123, San Isidro"
+    calificacionPromedio = 4.7
+    estaAbierto = $true
+    tiempoEsperaMinutos = 25
+    costoEnvioBase = 4.50
+    categorias = @(@{ id = 1 })
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://localhost:8080/api/restaurantes/1" `
+    -Method PUT -Body $body -ContentType "application/json"
+```
+
+**Notas Importantes:**
+- 🔄 Puedes actualizar parcialmente enviando solo los campos que necesitas cambiar
+- 🏷️ Para cambiar las categorías, envía la lista completa de categorías deseadas
+- 📊 La calificación puede actualizarse manualmente si es necesario
+
+---
+
+#### 🗑️ **DELETE** `/api/restaurantes/{id}` - Eliminar Restaurante
+
+Elimina un restaurante del sistema.
+
+**Path Parameters:**
+- `id` (Long) - ID del restaurante a eliminar
+
+**Respuesta Exitosa (204 No Content):**
+```
+(Sin contenido en el cuerpo de la respuesta)
+```
+
+**Respuestas de Error:**
+
+| Código | Descripción |
+|--------|-------------|
+| 404 Not Found | Restaurante no encontrado |
+| 400 Bad Request | No se puede eliminar un restaurante con pedidos asociados |
+
+**Ejemplo de Uso (cURL):**
+```bash
+curl -X DELETE http://localhost:8080/api/restaurantes/1
+```
+
+**Ejemplo de Uso (PowerShell):**
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8080/api/restaurantes/1" -Method DELETE
+```
+
+**⚠️ Advertencias:**
+- 🚨 Esta operación es **irreversible**
+- 🚨 Si el restaurante tiene productos asociados, estos también podrían verse afectados
+- 🚨 Si hay pedidos históricos del restaurante, puede fallar por integridad referencial
+- 💡 Considera implementar "eliminación suave" (soft delete) en producción
+
+**Alternativa Recomendada:**
+En lugar de eliminar, considera marcar el restaurante como cerrado:
+```bash
+PUT /api/restaurantes/1
+{
+  ...
+  "estaAbierto": false
+}
 ```
 
 ---

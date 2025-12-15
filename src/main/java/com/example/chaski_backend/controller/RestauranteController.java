@@ -53,5 +53,17 @@ public class RestauranteController {
         List<RestauranteDTO> restaurantes = restauranteService.obtenerPorCategoria(categoriaId);
         return ResponseEntity.ok(restaurantes);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<RestauranteDTO> actualizar(@PathVariable Long id, @RequestBody RestauranteDTO restauranteDTO) {
+        RestauranteDTO restauranteActualizado = restauranteService.actualizar(id, restauranteDTO);
+        return ResponseEntity.ok(restauranteActualizado);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        restauranteService.eliminar(id);
+        return ResponseEntity.noContent().build();
+    }
 }
 

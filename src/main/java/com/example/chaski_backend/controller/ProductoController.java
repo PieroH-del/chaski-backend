@@ -40,5 +40,17 @@ public class ProductoController {
         ProductoDTO producto = productoService.obtenerPorId(id);
         return ResponseEntity.ok(producto);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ProductoDTO> actualizar(@PathVariable Long id, @RequestBody ProductoDTO productoDTO) {
+        ProductoDTO productoActualizado = productoService.actualizar(id, productoDTO);
+        return ResponseEntity.ok(productoActualizado);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        productoService.eliminar(id);
+        return ResponseEntity.noContent().build();
+    }
 }
 

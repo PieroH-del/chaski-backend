@@ -130,6 +130,33 @@ public class PagoService {
     }
 
     /**
+     * Actualiza la información de un pago.
+     */
+    @Transactional
+    public PagoDTO actualizar(Long pagoId, CrearPagoDTO dto) {
+        Pago pago = pagoRepository.findById(pagoId)
+                .orElseThrow(() -> new RuntimeException("Pago no encontrado"));
+
+        // Actualizar campos básicos
+        pago.setMetodo(dto.getMetodo());
+        pago.setMonto(dto.getMonto());
+
+        Pago pagoActualizado = pagoRepository.save(pago);
+        return pagoMapper.toDto(pagoActualizado);
+    }
+
+    /**
+     * Elimina un pago del sistema.
+     */
+    @Transactional
+    public void eliminar(Long pagoId) {
+        if (!pagoRepository.existsById(pagoId)) {
+            throw new IllegalArgumentException("Pago no encontrado");
+        }
+        pagoRepository.deleteById(pagoId);
+    }
+
+    /**
      * Genera una referencia simulada para el pago.
      * Formato: METODO-TIMESTAMP-RANDOM
      * Ejemplos:

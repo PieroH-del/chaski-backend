@@ -27,5 +27,23 @@ public class CategoriaController {
         CategoriaDTO categoria = categoriaService.obtenerPorId(id);
         return ResponseEntity.ok(categoria);
     }
+
+    @PostMapping
+    public ResponseEntity<CategoriaDTO> crear(@RequestBody CategoriaDTO categoriaDTO) {
+        CategoriaDTO nuevaCategoria = categoriaService.crear(categoriaDTO);
+        return ResponseEntity.status(201).body(nuevaCategoria);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<CategoriaDTO> actualizar(@PathVariable Long id, @RequestBody CategoriaDTO categoriaDTO) {
+        CategoriaDTO categoriaActualizada = categoriaService.actualizar(id, categoriaDTO);
+        return ResponseEntity.ok(categoriaActualizada);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        categoriaService.eliminar(id);
+        return ResponseEntity.noContent().build();
+    }
 }
 

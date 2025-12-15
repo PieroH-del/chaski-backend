@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/usuarios")
 @RequiredArgsConstructor
@@ -31,6 +33,12 @@ public class UsuarioController {
         return ResponseEntity.ok(usuario);
     }
 
+    @GetMapping
+    public ResponseEntity<List<UsuarioDTO>> obtenerTodos() {
+        List<UsuarioDTO> usuarios = usuarioService.listarTodos();
+        return ResponseEntity.ok(usuarios);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<UsuarioDTO> obtenerPorId(@PathVariable Long id) {
         UsuarioDTO usuario = usuarioService.obtenerPorId(id);
@@ -43,6 +51,12 @@ public class UsuarioController {
             @RequestBody UsuarioActualizacionDTO dto) {
         UsuarioDTO usuario = usuarioService.actualizar(id, dto);
         return ResponseEntity.ok(usuario);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        usuarioService.eliminar(id);
+        return ResponseEntity.noContent().build();
     }
 }
 
